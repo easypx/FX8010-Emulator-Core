@@ -8,10 +8,10 @@ and Audigy cards, as VST effect plugin.
 The core functionality is given, but not unit tested. Syntax checker, register &
 instructions mapper and VST integration still need to be done.
 
-My testing has shown that it is possible to emulate a full DSP of this type (50MIPS) within a typical 
-Audio block size of 512 samples / ~0.7ms latency. To put it a little more clearly: that corresponds 
-to about 10 different effect plugins. Interestingly, in this implementation state the hardware
-DSP is still around 10X faster than the CPU emulation (i5/3.2GHz) assuming the DSP latency is around 1ms.
+My testing has shown that it actually can run 10000 instructions / ms or 10 MIPS on a single core. 
+To put it a little more clearly: that corresponds to about 10 different effect plugins. 
+Interestingly, in this implementation state the hardware DSP is still around 5X faster (50 MIPS) than the CPU emulation (i5/3.2GHz).
+However, if we factor in the multi-core processing, we're pretty close to the hardware.
 
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
 
