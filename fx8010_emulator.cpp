@@ -1,6 +1,7 @@
 // E-mu FX8010 Emulator (VST)
 // 2023 / klangraum
-// TODO: Syntaxchecker / Mapper
+// TODO: 
+// - Syntaxchecker / Mapper
 // - keine doppelten Deklarationen!
 // - Deklarationsformat checken
 // - Instruktionsformat checken
@@ -10,6 +11,8 @@
 // - Hardware-Konstanten brauchen wir erstmal nicht
 // - Metadaten im Header (zweitrangig)
 // - VST-Parameter ID hinzufügen bei control-Variable
+// - Delaylines
+// - DSP-Klasse
 // https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
 
 #include <stdio.h>
