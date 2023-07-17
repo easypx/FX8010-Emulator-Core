@@ -70,9 +70,9 @@ struct DSP {
 
 struct Register
 {
-	int registerType;		// Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
-	std::string registerName;	// Name des Registers
-	float registerValue;	// Wert des Registers 
+	int registerType; // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
+	std::string registerName; // Name des Registers
+	float registerValue; // Wert des Registers 
 	bool isSaturated = false;
 };
 
