@@ -208,7 +208,7 @@ int getCCR(DSP& dsp) {
 	return dsp.ccr;
 }
 
-// TODO: setRegisterValue(string key, float value), getRegisterValue(string key)
+// Beschreiben eines Registers z.B durch einen GUI-Slider
 int setRegisterValue(const std::string& key, float value)
 {
 	bool found = false;
@@ -232,6 +232,7 @@ int setRegisterValue(const std::string& key, float value)
 	}
 };
 
+// Lesen eines Registers, um einen GUI-SLider upzudaten.
 float getRegisterValue(const std::string& key)
 {
 	for (const auto& element : registers)
