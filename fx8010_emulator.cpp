@@ -1,5 +1,16 @@
 // E-mu FX8010 Emulator (VST)
 // 2023 / klangraum
+// TODO: Syntaxchecker / Mapper
+// - keine doppelten Deklarationen!
+// - Deklarationsformat checken
+// - Instruktionsformat checken
+// - Schlüsseworte identifizieren und entsprechend if/else if Verarbeitung
+// - GPR Counter, wenn registers.push_back() (Variablen) und instructions.push_back() (Zahlenwerte)
+// - 2D - unordered map (zeilenweise) anlegen, um Variablen und Konstranten einem GPR- Index zuzuweisen, Dopplungen checken?
+// - Hardware-Konstanten brauchen wir erstmal nicht
+// - Metadaten im Header (zweitrangig)
+// - VST-Parameter ID hinzufügen bei control-Variable
+// https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
 
 #include <stdio.h>
 #include <vector>
@@ -11,8 +22,10 @@ using namespace std;
 
 #pragma warning(disable : 4244 4305)
 
-// Enum for FX8010 opcodes
+#define E 2.71828
+#define PI 3.141592
 
+// Enum for FX8010 opcodes
 enum Opcode {
 	MAC,
 	MACINT,
@@ -33,7 +46,6 @@ enum Opcode {
 };
 
 // Enum for FX8010 register types
-
 enum RegisterType {
 	STATIC,
 	TEMP,
@@ -42,9 +54,6 @@ enum RegisterType {
 	OUTPUT_,
 	CONST
 };
-
-#define E 2.71828
-#define PI 3.141592
 
 struct DSP {
 	double accumulator; // 63 Bit, 4 Guard Bits, Long type?
@@ -73,8 +82,6 @@ std::vector < Register > registers =
   {STATIC, "b", 3} //4
 };
 
-
-// 
 // Funktion zum Erstellen der Lookup-Tabelle für den natürlichen Logarithmus
 std::vector<double> createLogLookupTable(double x_min, double x_max, int numEntries) {
 	std::vector<double> lookupTable;
@@ -202,7 +209,6 @@ int getCCR(DSP& dsp) {
 }
 
 // TODO: setRegisterValue(string key, float value), getRegisterValue(string key)
-// 
 int setRegisterValue(const std::string& key, float value)
 {
 	bool found = false;
@@ -238,17 +244,6 @@ float getRegisterValue(const std::string& key)
 	return 1; // Or any other default value you want to return if the element is not found
 }
 
-// TODO: Syntaxcheck/Parser
-// - keine doppelten Deklarationen!
-// - Deklarationsformat checken
-// - Instruktionsformat checken
-// - Schlüsseworte identifizieren und entsprechend if/else if Verarbeitung
-// - GPR Counter, wenn registers.push_back() (Variablen) und instructions.push_back() (Zahlenwerte)
-// - 2D - unordered map (zeilenweise) anlegen, um Variablen und Konstranten einem GPR- Index zuzuweisen, Dopplungen checken?
-// - Hardware-Konstanten brauchen wir erstmal nicht
-// - Metadaten im Header (zweitrangig)
-// - VST-Parameter ID hinzufügen bei control-Variable
-
 int main()
 {
 	double x_min = 0;  // Startwert für x
@@ -262,25 +257,23 @@ int main()
 	// Initialize the lookup table
 	initializeTanhLookup();
 
-	//https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
-
 	registers.push_back({ STATIC, "0.8", 0.8 });//5
 	registers.push_back({ STATIC, "d", 0.5 });//6
 	registers.push_back({ STATIC, "0.1", 0.1 });//7
 	registers.push_back({ CONST, "0", 0 });//8 alle CONST sind vorgeladen/muss nicht zwingend implementiert werden
 	//registers[4].registerValue = 3.3;
 
-	// Klasse, die eine Instruktion reprC$sentiert
+	// Struct, die eine Instruktion repraesentiert
 	struct Instruction
 	{
-		int opcode;			// Opcode-Nummer
+		int opcode;		// Opcode-Nummer
 		int operand1;		// Erster Operand (Index des Registers im vector)
 		int operand2;		// Zweiter Operand (Index des Registers im vector)
 		int operand3;		// Dritter Operand (Index des Registers im vector)
 		int operand4;		// Vierter Operand (Index des Registers im vector)
 	};
 
-	// Vector, der die Instruktionen enthC$lt
+	// Vector, der die Instruktionen enthaelt
 	std::vector < Instruction > instructions =
 	{
 		{MAC, 0, 0, 2, 3},
@@ -294,10 +287,11 @@ int main()
 		{MAC, 3, 0, 6, 7},
 		{LOG, 3, 5, 4, 8},
 		{EXP, 3, 5, 4, 8},
-		{MACINTW, 0,0,0,0},
-		{MACMV, 0,1,4,3}
+		{MACINTW, 0, 0, 0, 0},
+		{MACMV, 0, 1, 4, 3}
 	};
 
+	// Push some instructions into the code memory on the fly
 	instructions.push_back({ INTERP, 1, 0, 6, 4 });
 	instructions.push_back({ END, 0, 0, 0, 0 });
 
@@ -307,11 +301,11 @@ int main()
 	// Startzeitpunkt speichern
 	auto startTime = std::chrono::high_resolution_clock::now();
 
-	// Durchlaufen der Instruktionen und AusfC<hren des Emulators
+	// Durchlaufen der Instruktionen und Ausfuehren des Emulators
 	for (const auto& instruction : instructions)
 	{
 		// Zugriff auf die Operanden und Registerinformationen
-		int opcode = instruction.opcode;
+		int opcode = instruction.opcode; // nur lesbar
 		int operand1Index = instruction.operand1;
 		int operand2Index = instruction.operand2;
 		int operand3Index = instruction.operand3;
@@ -319,11 +313,11 @@ int main()
 
 		// Zugriff auf die Register und deren Daten
 		Register& operand1Register = registers[operand1Index]; // wiederbeschreibbar
-		Register& operand2Register = registers[operand2Index]; // nur lesbar
-		Register& operand3Register = registers[operand3Index]; // nur lesbar
-		Register& operand4Register = registers[operand4Index]; // nur lesbar
+		Register& operand2Register = registers[operand2Index]; // wiederbeschreibbar
+		Register& operand3Register = registers[operand3Index]; // wiederbeschreibbar
+		Register& operand4Register = registers[operand4Index]; // wiederbeschreibbar
 
-		// Hier kC6nnen Sie die Instruktionen ausfC<hren, basierend auf den Registern und Opcodes
+		// Hier können Sie die Instruktionen ausfC<hren, basierend auf den Registern und Opcodes
 		// ...
 		float R = operand1Register.registerValue;
 		float A = operand2Register.registerValue;
@@ -339,7 +333,7 @@ int main()
 			operand1Register.registerValue = R; // Update current result register
 			// Set saturation flag
 			operand1Register.isSaturated = true;
-			// Set ccr register based on R
+			// Set CCR register based on R, TODO: ...
 			setCCR(R, operand1Register.isSaturated);
 			break;
 		case MACINT:
@@ -362,7 +356,7 @@ int main()
 			operand1Register.registerValue = R;
 			break;
 		case EXP:
-			//R = exp(A*X-X); // Math.h Implementierung, 4 Mikrosekunden
+			//R = exp(A*X-X); // <cmath> Implementierung, 4 Mikrosekunden
 			//R = pow(E,A*X-X); // 4 x schneller als exp(x)
 			// unter 1 Mikrosekunden TODO: Verarbeitung der Exponenten
 			// lookupTableExp ist auf Exponent 7 voreingestellt, siehe Berechnung
