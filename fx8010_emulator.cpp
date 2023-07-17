@@ -76,14 +76,14 @@ struct Register
 	bool isSaturated = false;
 };
 
-// Vector, der die Register enthaelt
-std::vector < Register > registers =
+// Struct, die eine Instruktion repraesentiert
+struct Instruction
 {
-  {STATIC, "a", 0}, //0
-  {TEMP, "volume", 2}, //1
-  {TEMP, "in", 0.1}, //2
-  {TEMP, "out", 1}, //3
-  {STATIC, "b", 3} //4
+	int opcode;		// Opcode-Nummer
+	int operand1;		// Erster Operand (Index des Registers im vector)
+	int operand2;		// Zweiter Operand (Index des Registers im vector)
+	int operand3;		// Dritter Operand (Index des Registers im vector)
+	int operand4;		// Vierter Operand (Index des Registers im vector)
 };
 
 // Funktion zum Erstellen der Lookup-Tabelle für den natürlichen Logarithmus
@@ -262,23 +262,23 @@ int main()
 	// Initialize the lookup table
 	initializeTanhLookup();
 
+	// Vector, der die Register enthaelt
+	std::vector < Register > registers =
+	{
+ 		{STATIC, "a", 0}, //0
+ 		{TEMP, "volume", 2}, //1
+ 		{TEMP, "in", 0.1}, //2
+ 		{TEMP, "out", 1}, //3
+ 		{STATIC, "b", 3} //4
+	};
+	
 	registers.push_back({ STATIC, "0.8", 0.8 });//5
 	registers.push_back({ STATIC, "d", 0.5 });//6
 	registers.push_back({ STATIC, "0.1", 0.1 });//7
 	registers.push_back({ CONST, "0", 0 });//8 alle CONST sind vorgeladen/muss nicht zwingend implementiert werden
 	//registers[4].registerValue = 3.3;
 
-	// Struct, die eine Instruktion repraesentiert
-	struct Instruction
-	{
-		int opcode;		// Opcode-Nummer
-		int operand1;		// Erster Operand (Index des Registers im vector)
-		int operand2;		// Zweiter Operand (Index des Registers im vector)
-		int operand3;		// Dritter Operand (Index des Registers im vector)
-		int operand4;		// Vierter Operand (Index des Registers im vector)
-	};
-
-	// Vector, der die Instruktionen enthaelt
+	// Vector, der die Instruktionen mit Registerzuordnungen enthaelt 
 	std::vector < Instruction > instructions =
 	{
 		{MAC, 0, 0, 2, 3},
