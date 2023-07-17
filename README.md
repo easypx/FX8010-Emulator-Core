@@ -8,9 +8,9 @@ and Audigy cards, as VST effect plugin.
 The core functionality is given, but not unit tested. Syntax checker, register &
 instructions mapper and VST integration still need to be done.
 
-My testing has shown that we can emulate a full DSP of this type (50MIPS) within a typical 
+My testing has shown that it is possible to emulate a full DSP of this type (50MIPS) within a typical 
 Audio block size of 512 samples / ~50ms latency. To put it a little more clearly: that corresponds 
-to about 25 different plugins. Interestingly, in this implementation state is the hardware
-DSP is still around 50X faster than CPU emulation (i5/3.2GHz) assuming the latency is around 1ms.
+to about 25 different effect plugins. Interestingly, in this implementation state the hardware
+DSP is still around 50X faster than the CPU emulation (i5/3.2GHz) assuming the DSP latency is around 1ms.
 
 2023 / klangraum
