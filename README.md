@@ -19,6 +19,6 @@ https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Par
 A Beginner's Guide to DSP Programming.pdf
 https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
 
-![EMU10K1](http://url/to/img.png](https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/EMU10K1-SEFbySpc.jpg/615px-EMU10K1-SEFbySpc.jpg)
+![EMU10K1](https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/EMU10K1-SEFbySpc.jpg/615px-EMU10K1-SEFbySpc.jpg)
 
 2023 / klangraum
