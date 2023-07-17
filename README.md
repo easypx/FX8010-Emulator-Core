@@ -13,8 +13,8 @@ Audio block size of 512 samples / ~50ms latency. To put it a little more clearly
 to about 25 different effect plugins. Interestingly, in this implementation state the hardware
 DSP is still around 50X faster than the CPU emulation (i5/3.2GHz) assuming the DSP latency is around 1ms.
 
+Documentation:
 [3rd Party Docs/FX8010 - A DSP Chip Architecture for Audio Effects (1998).pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf)
-
 [A Beginner's Guide to DSP Programming.pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf)
 
 ![EMU10K1](https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/EMU10K1-SEFbySpc.jpg/615px-EMU10K1-SEFbySpc.jpg)
