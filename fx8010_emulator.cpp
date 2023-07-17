@@ -1,7 +1,7 @@
 // E-mu FX8010 Emulator (VST)
 // 2023 / klangraum
 // TODO: 
-// - Syntaxchecker / Mapper
+// - Syntaxparser
 // - keine doppelten Deklarationen!
 // - Deklarationsformat checken
 // - Instruktionsformat checken
@@ -271,7 +271,9 @@ int main()
  		{TEMP, "out", 1}, //3
  		{STATIC, "b", 3} //4
 	};
-	
+
+	// Push some registers into the register memory on the fly
+	// Further used in the syntax parser
 	registers.push_back({ STATIC, "0.8", 0.8 });//5
 	registers.push_back({ STATIC, "d", 0.5 });//6
 	registers.push_back({ STATIC, "0.1", 0.1 });//7
@@ -297,6 +299,7 @@ int main()
 	};
 
 	// Push some instructions into the code memory on the fly
+	// Further used in the syntax parser
 	instructions.push_back({ INTERP, 1, 0, 6, 4 });
 	instructions.push_back({ END, 0, 0, 0, 0 });
 
