@@ -9,7 +9,7 @@ The core functionality is given, but not unit tested. Syntax checker, register &
 instructions mapper and VST integration still need to be done.
 
 My testing has shown that the optimized release build actually can run 200 instructions / us (200 MIPS) on a single core. 
-Interestingly, in this implementation state the hardware DSP been surpassed 4X (10K1 / 50 MIPS) on a i5/3.2GHz.
+Interestingly, in this implementation state the hardware DSP has been surpassed 4X (10K1 / 50 MIPS) on a i5/3.2GHz.
 However, if we factor in the multi-core processing, we're able to emulate much more DSP's.
 
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
