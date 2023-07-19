@@ -3,10 +3,10 @@
 
 // TODO: 
 // - Syntaxcheck/Parser
-// - keine doppelten Deklarationen!
-// - Deklarationsformat checken
-// - Instruktionsformat checken
-// - Schlüsseworte identifizieren und entsprechend if/else if Verarbeitung, Mapping der Registerindizes auf die Instructiontemplates
+// - Syntaxcheck: keine doppelten Deklarationen!
+// - Syntaxcheck: Deklarationsformat checken
+// - Syntaxcheck: Instruktionsformat checken
+// - Syntaxcheck: Schlüsseworte identifizieren und entsprechend if/else if Verarbeitung, Mapping der Registerindizes auf die Instructiontemplates
 // - (Hardware-Konstanten)
 // - (Metadaten im Header)
 // - VST-Integration, VST-Parameter ID hinzufügen bei CONTROL-Variable
@@ -14,6 +14,8 @@
 // - 11 Bit (2048) Shift der Leseadresse für Delays: Vom Code (mit Shift), wird einfach 11 Bit subtrahiert, um Vectorindex zu erhalten.
 // - INTERP für lineare Interpolation beim Delay-Auslesen
 // - Code aus File in String laden
+// - Syntaxcheck: R darf kein INPUT Typ sein!
+// - Syntaxcheck: END muss vorhanden sein!
 
 #include <stdio.h>
 #include <vector>
@@ -597,12 +599,13 @@ int main()
 		{ANDXOR, 0, 0, 0, 0},
 		{IDELAY, 9, 0, 11, 0},
 		{IDELAY, 10, 0, 11, 7},
+		{END}
 	};
 
 	//instructions.push_back({ INTERP, 1, 0, 6, 4 });
 	//instructions.push_back({ END, 0, 0, 0, 0 });
 
-	setRegisterValue("b", 10.0); // Test the functions
+	//setRegisterValue("b", 10.0); // Test the functions
 	//std::cout << "b: " << getRegisterValue("b") << endl;
 
 	// Fill buffer with 0 is important to avoid clicks at the bedinning
@@ -617,183 +620,187 @@ int main()
 	// Durchlaufen der Instruktionen und AusfC<hren des Emulators
 	//std::cout << "x,y" << std::endl; // CVS Achsenbezeichungen
 	float R = 0, A = 0, X = 0, Y = 0;// TODO: nach DSP 
-	for (int i = 0; i < 32; i++) {
-		for (const auto& instruction : instructions)
-		{
-			// Zugriff auf die Operanden und Registerinformationen
-			int opcode = instruction.opcode; // read only
-			int operand1Index = instruction.operand1;
-			int operand2Index = instruction.operand2;
-			int operand3Index = instruction.operand3;
-			int operand4Index = instruction.operand4;
-
-			// Zugriff auf die Register und deren Daten
-			Register& operand1Register = registers[operand1Index]; // read/write
-			Register& operand2Register = registers[operand2Index]; // read/write
-			Register& operand3Register = registers[operand3Index]; // read/write
-			Register& operand4Register = registers[operand4Index]; // read/write
-
-			// Hier koennen Sie die Instruktionen ausfuehren, basierend auf den Registern und Opcodes
-			// ...
-			// Lade Registerwerte 
-			// TODO: Stereo Inputs?
-			R = operand1Register.registerValue;
-			if (operand2Register.registerType == INPUT) A = testSample[i]; // Sample Input
-			else A = operand2Register.registerValue;
-			if (operand3Register.registerType == INPUT) X = testSample[i]; // Sample Input
-			else X = operand3Register.registerValue;
-			if (operand4Register.registerType == INPUT) Y = testSample[i]; // Sample Input
-			else Y = operand4Register.registerValue; // 10???
-			//cout << R << "|" << A << "|" << X << "|" << Y << endl; // Registers before processing
-			switch (opcode)
+	bool isEND = false;
+	while (!isEND) {
+		for (int i = 0; i < 32; i++) {
+			for (const auto& instruction : instructions)
 			{
-			case MAC:
-				R = A + X * Y;
-				dsp.accumulator = R; // Copy unsaturated value into accumulator
-				// Calculate the linearly interpolated tanh(x) value, (DIN 4095) saturation, TODO: Check, Trace 
-				R = lerpTanh(R);
-				operand1Register.registerValue = R; // Update current result register
-				// Set saturation flag
-				operand1Register.isSaturated = true;
-				// Set ccr register based on R
-				setCCR(R, operand1Register.isSaturated);
-				break;
-			case MACINT:
-				R = A + X * Y;
-				dsp.accumulator = R;
-				R = lerpTanh(R);
-				operand1Register.registerValue = R;
-				break;
-			case ACC3:
-				R = A + X + Y;
-				dsp.accumulator = R;
-				// TODO: Saturation?
+				// Zugriff auf die Operanden und Registerinformationen
+				int opcode = instruction.opcode; // read only
+				int operand1Index = instruction.operand1;
+				int operand2Index = instruction.operand2;
+				int operand3Index = instruction.operand3;
+				int operand4Index = instruction.operand4;
+
+				// Zugriff auf die Register und deren Daten
+				Register& operand1Register = registers[operand1Index]; // read/write
+				Register& operand2Register = registers[operand2Index]; // read/write
+				Register& operand3Register = registers[operand3Index]; // read/write
+				Register& operand4Register = registers[operand4Index]; // read/write
+
+				// Hier koennen Sie die Instruktionen ausfuehren, basierend auf den Registern und Opcodes
 				// ...
-				operand1Register.registerValue = R;
-				break;
-			case LOG:
-				//R = (log(A)/X)+1; // Math.h Implementierung, 4 Mikrosekunden
-				R = linearInterpolate(A, lookupTablesLog[X], 0, 1.0); // unter 1 Mikrosekunden
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case EXP:
-				//R = exp(A*X-X); // Math.h Implementierung, 4 Mikrosekunden
-				//R = pow(E,A*X-X); // 4 x schneller als exp(x)
-				R = linearInterpolate(A, lookupTablesExp[X], 0, 1);
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case MACW:
-				R = wrapAround(A + X * Y); // TODO: Check
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case MACMV:
-				dsp.accumulator = dsp.accumulator + X * Y;
-				R = A;
-				operand1Register.registerValue = R;
-				break;
-			case ANDXOR:
-				// TODO: ...
-				// Aus R = A & X ^ Y synthetisierte bitwise logische Operationen (Dank ChatGPT)
-				// 
-				// AND	
-				//		A = 0x00000000   
-				//		X = 0x10101010  
-				//		Y = 0x10000000
-				// OR   
-				//		A = 0x00000000
-				//		X = 0x10101010
-				//		Y = 0x01010101
-				// XOR
-				//		A = 0x10101010
-				//		X = 0x01010101
-				//		Y = 0x00000000
-				// NOT
-				//		A = 0x10101010
-				//		X = 0x00000000
-				//		Y = 0x11111111
-				// 
-				// Schritt 1: A & X
-				// A& X ergibt eine bitweise Und - Verknüpfung zwischen A und X.Hierbei werden jeweils die 
-				// entsprechenden Bits von A und X verglichen, und das Ergebnis hat an jeder Position 
-				// eine 1, wenn beide Bits 1 sind, und eine 0, wenn eines der Bits oder beide Bits 0 sind.
+				// Lade Registerwerte 
+				// TODO: Stereo Inputs?
+				R = operand1Register.registerValue;
+				if (operand2Register.registerType == INPUT) A = testSample[i]; // Sample Input
+				else A = operand2Register.registerValue;
+				if (operand3Register.registerType == INPUT) X = testSample[i]; // Sample Input
+				else X = operand3Register.registerValue;
+				if (operand4Register.registerType == INPUT) Y = testSample[i]; // Sample Input
+				else Y = operand4Register.registerValue; // 10???
+				//cout << R << "|" << A << "|" << X << "|" << Y << endl; // Registers before processing
+				switch (opcode)
+				{
+				case MAC:
+					R = A + X * Y;
+					dsp.accumulator = R; // Copy unsaturated value into accumulator
+					// Calculate the linearly interpolated tanh(x) value, (DIN 4095) saturation, TODO: Check, Trace 
+					R = lerpTanh(R);
+					operand1Register.registerValue = R; // Update current result register
+					// Set saturation flag
+					operand1Register.isSaturated = true;
+					// Set ccr register based on R
+					setCCR(R, operand1Register.isSaturated);
+					break;
+				case MACINT:
+					R = A + X * Y;
+					dsp.accumulator = R;
+					R = lerpTanh(R);
+					operand1Register.registerValue = R;
+					break;
+				case ACC3:
+					R = A + X + Y;
+					dsp.accumulator = R;
+					// TODO: Saturation?
+					// ...
+					operand1Register.registerValue = R;
+					break;
+				case LOG:
+					//R = (log(A)/X)+1; // Math.h Implementierung, 4 Mikrosekunden
+					R = linearInterpolate(A, lookupTablesLog[X], 0, 1.0); // unter 1 Mikrosekunden
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case EXP:
+					//R = exp(A*X-X); // Math.h Implementierung, 4 Mikrosekunden
+					//R = pow(E,A*X-X); // 4 x schneller als exp(x)
+					R = linearInterpolate(A, lookupTablesExp[X], 0, 1);
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case MACW:
+					R = wrapAround(A + X * Y); // TODO: Check
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case MACMV:
+					dsp.accumulator = dsp.accumulator + X * Y;
+					R = A;
+					operand1Register.registerValue = R;
+					break;
+				case ANDXOR:
+					// TODO: ...
+					// Aus R = A & X ^ Y synthetisierte bitwise logische Operationen (Dank ChatGPT)
+					// 
+					// AND	
+					//		A = 0x00000000   
+					//		X = 0x10101010  
+					//		Y = 0x10000000
+					// OR   
+					//		A = 0x00000000
+					//		X = 0x10101010
+					//		Y = 0x01010101
+					// XOR
+					//		A = 0x10101010
+					//		X = 0x01010101
+					//		Y = 0x00000000
+					// NOT
+					//		A = 0x10101010
+					//		X = 0x00000000
+					//		Y = 0x11111111
+					// 
+					// Schritt 1: A & X
+					// A& X ergibt eine bitweise Und - Verknüpfung zwischen A und X.Hierbei werden jeweils die 
+					// entsprechenden Bits von A und X verglichen, und das Ergebnis hat an jeder Position 
+					// eine 1, wenn beide Bits 1 sind, und eine 0, wenn eines der Bits oder beide Bits 0 sind.
 
-				// A & X = 0x00000000 & 0x10101010 = 0x00000000
+					// A & X = 0x00000000 & 0x10101010 = 0x00000000
 
-				// Schritt 2: A & X ^ Y
-				// Das Ergebnis der vorherigen Operation(A & X) wird mit Y bitweise exklusiv - verodert(XOR).
-				// Dies bedeutet, dass an jeder Position das Ergebnis eine 1 ist, wenn die Bits in A & X 
-				// und Y unterschiedlich sind, und eine 0, wenn die Bits gleich sind.
+					// Schritt 2: A & X ^ Y
+					// Das Ergebnis der vorherigen Operation(A & X) wird mit Y bitweise exklusiv - verodert(XOR).
+					// Dies bedeutet, dass an jeder Position das Ergebnis eine 1 ist, wenn die Bits in A & X 
+					// und Y unterschiedlich sind, und eine 0, wenn die Bits gleich sind.
 
-				// (A & X) ^ Y = 0x00000000 ^ 0x01010101 = 0x01010101
-				// 
-				// Typcast zu float->int wird wahrscheinlich schlecht funktionieren als Input.
-				// FX8010 kennt auch int als Zahlenbasis. Man müsste wohl R, A, X, Y vorher auf int-Typen umleiten/checken.
-				R = (int)A & (int)X ^ (int)Y;
-				break;
-			case TSTNEG:
-				R = A >= Y ? X : -X; // TODO: Check
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case LIMIT:
-				R = A >= Y ? X : Y; // TODO: Check
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case LIMITN:
-				R = A < Y ? X : Y; // TODO: Check
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				break;
-			case SKIP:
-				// TODO: ...
-				// Need indexed for-loop for jumps?
-				// Oder Zähler setzen und runterzählen, am Loop-Anfang prüfen, ob Sprung notwendig.
-				break;
-			case INTERP:
-				R = (1.0 - X) * A + (X * Y);
-				dsp.accumulator = R;
-				operand1Register.registerValue = R;
-				//std::cout << "here" << std::endl;
-				break;
-			case END:
-				// End of sample cycle
-				// TODO: Breakout from loop?
-				break;
-			case IDELAY:
-				if (R == READ) {
-					operand2Register.registerValue = readSmallDelay(Y); // iDelayRead(Y); // Y = Adresse
+					// (A & X) ^ Y = 0x00000000 ^ 0x01010101 = 0x01010101
+					// 
+					// Typcast zu float->int wird wahrscheinlich schlecht funktionieren als Input.
+					// FX8010 kennt auch int als Zahlenbasis. Man müsste wohl R, A, X, Y vorher auf int-Typen umleiten/checken.
+					R = (int)A & (int)X ^ (int)Y;
+					break;
+				case TSTNEG:
+					R = A >= Y ? X : -X; // TODO: Check
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case LIMIT:
+					R = A >= Y ? X : Y; // TODO: Check
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case LIMITN:
+					R = A < Y ? X : Y; // TODO: Check
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					break;
+				case SKIP:
+					// TODO: ...
+					// Need indexed for-loop for jumps?
+					// Oder Zähler setzen und runterzählen, am Loop-Anfang prüfen, ob Sprung notwendig.
+					break;
+				case INTERP:
+					R = (1.0 - X) * A + (X * Y);
+					dsp.accumulator = R;
+					operand1Register.registerValue = R;
+					//std::cout << "here" << std::endl;
+					break;
+				case END:
+					// End of sample cycle
+					// TODO: Breakout from loop?
+					isEND = true;
+					break;
+				case IDELAY:
+					if (R == READ) {
+						operand2Register.registerValue = readSmallDelay(Y); // iDelayRead(Y); // Y = Adresse
+					}
+					else if (R == WRITE) {
+						writeSmallDelay(A); // iDelayWrite(A); // A = value
+					}
+					break;
+				case XDELAY:
+					if (R == READ) {
+						operand2Register.registerValue = readLargeDelay(Y); // iDelayRead(Y); // Y = Adresse
+					}
+					else if (R == WRITE) {
+						writeLargeDelay(A); // iDelayWrite(A); // A = value
+					}
+					break;
+				default:
+					//std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
+					break;
 				}
-				else if (R == WRITE) {
-					writeSmallDelay(A); // iDelayWrite(A); // A = value
-				}
-				break;
-			case XDELAY:
-				if (R == READ) {
-					operand2Register.registerValue = readLargeDelay(Y); // iDelayRead(Y); // Y = Adresse
-				}
-				else if (R == WRITE) {
-					writeLargeDelay(A); // iDelayWrite(A); // A = value
-				}
-				break;
-			default:
-				//std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
-				break;
+				// Reset temp registers, TODO: Need this?
+				if (operand1Register.registerType == TEMP) operand1Register.registerValue = 0;
+				if (operand2Register.registerType == TEMP) operand2Register.registerValue = 0;
+				if (operand3Register.registerType == TEMP) operand3Register.registerValue = 0;
+				if (operand4Register.registerType == TEMP) operand4Register.registerValue = 0;
+
+				instructionCounter++;
+				//std::cout << testSample[i] << " , " << R << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
+				//std::cout << "(" << testSample[i] << " , " << R << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
+				//data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
+				cout << R << "|" << A << "|" << X << "|" << Y << endl; // Registers after processing
 			}
-			// Reset temp registers, TODO: Need this?
-			if (operand1Register.registerType == TEMP) operand1Register.registerValue = 0;
-			if (operand2Register.registerType == TEMP) operand2Register.registerValue = 0;
-			if (operand3Register.registerType == TEMP) operand3Register.registerValue = 0;
-			if (operand4Register.registerType == TEMP) operand4Register.registerValue = 0;
-
-			instructionCounter++;
-			//std::cout << testSample[i] << " , " << R << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
-			//std::cout << "(" << testSample[i] << " , " << R << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
-			//data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
-			//cout << R << "|" << A << "|" << X << "|" << Y << endl; // Registers after processing
 		}
 
 		/*if (AUDIOBLOCKSIZE <= 1) {
