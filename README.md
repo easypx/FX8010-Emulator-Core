@@ -15,7 +15,7 @@ However, if we factor in the multi-core processing, we're able to emulate much m
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
 
 Usage:  
-- Put all *.cpp in source/ and all *.h in include/
+- Put all *.cpp and testcode.da in source/ and all *.h in include/
 - fx8010_emulator.cpp is not needed 
 - For console debug output change DEBUG 1 in fx8010.h
 - Only a few instructions are working for now
