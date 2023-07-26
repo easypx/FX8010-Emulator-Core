@@ -14,6 +14,11 @@ However, if we factor in the multi-core processing, we're able to emulate much m
 
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
 
+Usage:  
+- Put all *.cpp in source/ and all *.h in include/
+- For console debug output change DEBUG 1 in fx8010.h
+- Only a few instructions are working for now
+
 [3rd Party Docs/FX8010 - A DSP Chip Architecture for Audio Effects (1998).pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf)
 
 [A Beginner's Guide to DSP Programming.pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf)
