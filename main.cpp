@@ -36,7 +36,7 @@ int main()
     }
 }*/
 
-    if (fx8010->loadFile("testcode.txt"))
+    if (fx8010->loadFile("testcode.da"))
     {
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
