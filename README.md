@@ -18,7 +18,7 @@ Usage:
 - Put all *.cpp and testcode.da in source/ and all *.h in include/
 - fx8010_emulator.cpp is not needed 
 - For console debug output change DEBUG 1 in fx8010.h
-- Only a few instructions are working for now
+- Only a few instructions are working, use Mono (numChannels = 1), will be updated
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below)
 
 [3rd Party Docs/FX8010 - A DSP Chip Architecture for Audio Effects (1998).pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf)
