@@ -1,0 +1,14 @@
+; Deklarationen
+static a ; Kommentar
+TEMP c = 1.0
+itramsize 1200
+input in 
+control volume = 0.5 
+output out
+
+; Instruktionen
+INTERP c, -0.25, in, 0.25
+MAC out, 0, in, c
+;MACINT a, 0, a, 2.0
+;ACC3 out, 1, a, 2
+END
