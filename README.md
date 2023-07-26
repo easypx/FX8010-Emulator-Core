@@ -16,6 +16,7 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 
 Usage:  
 - Put all *.cpp in source/ and all *.h in include/
+- fx8010_emulator.cpp is not needed 
 - For console debug output change DEBUG 1 in fx8010.h
 - Only a few instructions are working for now
 
