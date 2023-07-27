@@ -4,27 +4,35 @@
 #include <string>
 #include <regex>
 #include <map>
+#include <iostream>
 
-// TODO: Helper-Klasse, Kapselung verhindert Doppeldefinitionen
-
-// Funktion zum Entfernen führender und nachfolgender Leerzeichen
-std::string trim(const std::string &str);
-
-bool isNumber(const std::string &input);
-
-// Farben fuer Konsole
-// Benutzung: cout << colorMap[COLOR_RED] << "Text" << colorMap[COLOR_NULL];
-enum colorCodes
+namespace Klangraum
 {
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_BLUE,
-    COLOR_DEFAULT,
-    COLOR_NULL // Restore?
-};
 
-// Externe Deklaration der globalen Variable
-extern std::map<enum colorCodes, std::string> colorMap;
+    // TODO: Helper-Klasse, Kapselung verhindert Doppeldefinitionen
+
+    // Funktion zum Entfernen führender und nachfolgender Leerzeichen
+    std::string trim(const std::string &str);
+
+    bool isNumber(const std::string &input);
+
+    // Farben fuer Konsole
+    // Benutzung: cout << colorMap[COLOR_RED] << "Text" << colorMap[COLOR_NULL];
+    enum colorCodes
+    {
+        COLOR_RED,
+        COLOR_GREEN,
+        COLOR_YELLOW,
+        COLOR_BLUE,
+        COLOR_DEFAULT,
+        COLOR_NULL // Restore?
+    };
+
+    // Externe Deklaration der globalen Variable
+    extern std::map<enum colorCodes, std::string> colorMap;
+
+    void printLine(int count);
+
+} // namespace Klangraum
 
 #endif // HELPERS_H

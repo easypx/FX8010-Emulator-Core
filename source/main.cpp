@@ -1,10 +1,17 @@
+// TODO:
+// (mehrere Debug Levels)
+// getErrorList(), um Fehler im VST anzuzeigen
+// "register" vermeiden ist C/C++ Keyword, macht im lokalen Scope allerdings kein Problem
+
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
+
+//using namespace Klangraum;
 
 int main()
 {
     // Create an instance of FX8010 class
-    FX8010 *fx8010 = new FX8010();
+    Klangraum::FX8010 *fx8010 = new Klangraum::FX8010();
 
     // Vector mit linearen Sampledaten. Nur zum Testen!
     vector<vector<float>> testSample;
@@ -49,7 +56,7 @@ int main()
             for (int i = 0; i < AUDIOBLOCKSIZE; i++)
             {
                 output = fx8010->process(testSample[j][i]);
-                //cout << colorMap[COLOR_GREEN] << "Output: " << output << colorMap[COLOR_NULL] << endl;
+                // cout << "Output: " << output << endl;
             }
         }
 
@@ -61,13 +68,12 @@ int main()
 
         // Ausgabe der gemessenen Zeit in Mikrosekunden
         std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
-                  << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock." << std::endl;
-
-        
+                  << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
+        cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / (float)SAMPLERATE * (float)AUDIOBLOCKSIZE * 1000000.0 << " Mikrosekunden" << endl;
     }
     else
     {
-        cout << colorMap[COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." << colorMap[COLOR_NULL] << endl;
+        cout << Klangraum::colorMap[Klangraum::COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." << Klangraum::colorMap[Klangraum::COLOR_NULL] << endl;
     }
     return 0;
 }
