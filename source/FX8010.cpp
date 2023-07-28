@@ -7,17 +7,21 @@
 namespace Klangraum
 {
 
-	FX8010::FX8010()
-	{
-		initialize();
-	};
-
+	FX8010::FX8010(){};
 	FX8010::~FX8010(){};
 
 	void FX8010::initialize()
 	{
+		if (DEBUG)
+			printLine(80);
+
+		if (DEBUG)
+			cout << "Initialisiere den DSP..." << endl;
+
 		// Erstelle die Fehler-Map
 		//--------------------------------------------------------------------------------
+		if (DEBUG)
+			cout << "Erstelle die Fehler-Map" << endl;
 		errorMap[ERROR_NONE] = "Kein Fehler";
 		errorMap[ERROR_INVALID_INPUT] = "Ungültige Eingabe";
 		errorMap[ERROR_DIVISION_BY_ZERO] = "Division durch Null";
@@ -33,41 +37,176 @@ namespace Klangraum
 		// Spezialregister
 		//--------------------------------------------------------------------------------
 		// Lege CCR Register an. Wir nutzen es wie ein GPR.
-		registers.push_back({CCR, "ccr", 0, 0});
+		// NOTE: Map wäre besser, um über Stringlabel zu identifizieren.
+		if (DEBUG)
+			cout << "Lege Spezialregister an (CCR, READ, WRTIE, AT)" << endl;
+
+		registers.push_back({CCR, "ccr", 0, 0}); // GPR Index 0
 
 		// Lege weitere (Pseudo)-Register an. Sie dienen nur als Label und werden nicht als Speicher verwendet.
-		registers.push_back({READ, "read", 0, 0});
-		registers.push_back({WRITE, "write", 0, 0});
-		registers.push_back({AT, "at", 0, 0});
+		registers.push_back({READ, "read", 0, 0});	 // GPR Index 1
+		registers.push_back({WRITE, "write", 0, 0}); // GPR Index 2
+		registers.push_back({AT, "at", 0, 0});		 // GPR Index 3
 
 		// LOG, EXP Tables anlegen (Wertebereich: -1.0 bis 1.0)
 		//--------------------------------------------------------------------------------
+		// Mehrere Lookup Tables in einem Vector
+		if (DEBUG)
+			cout << "Erzeuge LOG, EXP Lookuptables" << endl;
+
+		int numExponent = 32;
+		int numEntries = 32;
+		int x_min = 0; // < 0 gives nan!
+		int x_max = 1.0;
+
+		lookupTablesLog.reserve(numExponent - 1);
+		lookupTablesExp.reserve(numExponent - 1);
+
+		// Populate lookupTablesLog with lookup tables for different i values
+		// Tabellen mit 4 Vorzeichen und 32 Exponenten je 32 Werte = 4096 Float Werte (16384 Bytes) (2x für LOG und EXP)
+		for (int i = 1; i < numExponent; i++)
+		{
+			std::vector<double> lookupTableLog = createLogLookupTable(0, 1.0, numEntries, i);
+			std::vector<double> temp;
+			temp.resize(32); // Initialisierung mit 0
+			// an Y-Achse spiegeln
+			temp = mirrorYVector(lookupTableLog);
+			// letztes Element, jetzt 0, löschen
+			// QUESTION: Brauchen wir das?
+			// temp.pop_back();
+			// Negieren
+			temp = negateVector(temp);
+			// Verknüpfen Sie die beiden Vektoren
+			temp = concatenateVectors(temp, lookupTableLog);
+			temp.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
+			// Schiebe neuen Vector in die Sammlung von LOG Vectoren
+			lookupTablesLog.push_back(temp);
+
+			std::vector<double> lookupTableExp = createExpLookupTable(0, 1.0, numEntries, i);
+			temp.resize(32); // Initialisierung mit 0
+			// an Y-Achse spiegeln
+			temp = mirrorYVector(lookupTableExp);
+			// letztes Element, jetzt 0, löschen
+			// QUESTION: Brauchen wir das?
+			// temp.pop_back();
+			// Negieren
+			temp = negateVector(temp);
+			// Verknüpfen Sie die beiden Vektoren
+			temp = concatenateVectors(temp, lookupTableExp);
+			temp.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
+			// Schiebe neuen Vector in die Sammlung von LOG Vectoren
+			lookupTablesExp.push_back(temp);
+		}
+
+		// Delaylines
+		//--------------------------------------------------------------------------------
+		// Speicher Allocation nicht ganz klar. Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor.
+		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
+		smallDelayBuffer.reserve(4800);	 // 100ms
+		largeDelayBuffer.reserve(48000); // 1s
+
+		if (DEBUG)
+			printLine(80);
+	}
+
+	// CHECKED
+	// Funktion zum Erstellen der Lookup-Tabelle für die n-te Wurzel
+	std::vector<double> FX8010::createLogLookupTable(double x_min, double x_max, int numEntries, int exponent)
+	{
+		std::vector<double> lookupTable;
+		double step = (x_max - x_min) / (numEntries - 1);
+		// push 1. value=0 to avoid nan! only for log(x)! change i to 1!
+		// lookupTable.push_back(0.0f);
+		for (int i = 0; i < numEntries; ++i)
+		{
+			double x = x_min + (i * step);
+			// natural log as seen in dane programming pdf, issues with nan!
+			// double logValue = std::log(x) / exponent + 1;
+			// another good approximation! maybe this is what is really done in the dsp!
+			// they mention approximation of pow and sqrt.
+			double logValue = pow(x, 1.0 / static_cast<float>(exponent));
+			lookupTable.push_back(logValue);
+		}
+		return lookupTable;
+	}
+
+	// CHECKED
+	// Funktion zum Erstellen der Lookup-Tabelle für n-te Potenz (EXP)
+	std::vector<double> FX8010::createExpLookupTable(double x_min, double x_max, int numEntries, int exponent)
+	{
+		std::vector<double> lookupTable;
+		double step = (x_max - x_min) / (numEntries - 1);
+		// lookupTable.push_back(0.0f); // see log for explanation
+		for (int i = 0; i < numEntries; ++i)
+		{
+			double x = x_min + i * step;
+			// double expValue = exp(x * numEntries - numEntries);
+			double expValue = pow(x, exponent); // see log for explanation
+			lookupTable.push_back(expValue);
+		}
+		return lookupTable;
+	}
+
+	// NOT CHECKED
+	// Funktion zum Spiegeln des Vectors
+	std::vector<double> FX8010::mirrorYVector(const std::vector<double> &inputVector)
+	{
+		std::vector<double> mirroredVector;
+		for (int i = inputVector.size() - 1; i >= 0; --i)
+		{
+			mirroredVector.push_back(inputVector[i]);
+		}
+		return mirroredVector;
+	}
+
+	// NOT CHECKED
+	// Funktion zum Verknüpfen der Vectoren
+	std::vector<double> FX8010::concatenateVectors(const std::vector<double> &vector1, const std::vector<double> &vector2)
+	{
+		std::vector<double> concatenatedVector;
+		concatenatedVector.reserve(vector1.size() + vector2.size());
+		concatenatedVector.insert(concatenatedVector.end(), vector1.begin(), vector1.end());
+		concatenatedVector.insert(concatenatedVector.end(), vector2.begin(), vector2.end());
+		return concatenatedVector;
+	}
+
+	// NOT CHECKED
+	// Hier ist eine Funktion zum Negieren eines Vektors
+	std::vector<double> FX8010::negateVector(const std::vector<double> &inputVector)
+	{
+		std::vector<double> negatedVector;
+		negatedVector.reserve(inputVector.size());
+		for (float value : inputVector)
+		{
+			negatedVector.push_back(-value);
+		}
+		return negatedVector;
 	}
 
 	// NOT CHECKED
 	// Slighty modified cases, which makes more sense. ChatGPT thinks the same way.
-	inline void FX8010::setCCR(float result)
+	inline void FX8010::setCCR(const float result)
 	{
 		if (result == 0)
-			ccr = 0x8; // 0b1000 | 8
+			registers[0].registerValue = 0x8; // 0b1000 | 8
 		else if (result < 0 && result > -1.0)
-			ccr = 0x4; // 0b0100 | 4
+			registers[0].registerValue = 0x4; // 0b0100 | 4
 		else if (result > 0 && result < 1.0)
-			ccr = 0x180;						  // 0b000110000000 | 384
+			registers[0].registerValue = 0x180;	  // 0b000110000000 | 384
 		else if (result == 1.0 && result == -1.0) // Saturation
-			ccr = 0x10;							  // 0b00010000 | 16
+			registers[0].registerValue = 0x10;	  // 0b00010000 | 16
 		else									  // != 0
-			ccr = 0x100;						  // 0b000100000000 | 256
+			registers[0].registerValue = 0x100;	  // 0b000100000000 | 256
 	}
 
 	// NOT CHECKED
 	inline int FX8010::getCCR()
 	{
-		return ccr;
+		return registers[0].registerValue;
 	}
 
 	// CHECKED
-	inline float FX8010::saturate(float input, float threshold)
+	inline float FX8010::saturate(const float input, const float threshold)
 	{
 		// Ternäre Schreibweise
 		return (input > threshold) ? threshold : ((input < -threshold) ? -threshold : input);
@@ -91,13 +230,13 @@ namespace Klangraum
 	}
 
 	// NOT CHECKED
-	inline float FX8010::wrapAround(float a)
+	inline float FX8010::wrapAround(const float a)
 	{
 		// Ternäre Schreibweise
 		return (a >= 1.0f) ? (a - 2.0f) : ((a < -1.0f) ? (a + 2.0f) : a);
 	}
 
-	inline int FX8010::logicOps(GPR &A_, GPR &X_, GPR &Y_)
+	inline int FX8010::logicOps(const GPR &A_, const GPR &X_, const GPR &Y_)
 	{
 		// siehe "Processor with Instruction Set for Audio Effects (US930158, 1997).pdf"
 		// A	      X	         Y	        R
@@ -110,9 +249,9 @@ namespace Klangraum
 		// A          X      0xFFFFFF    A nand X
 
 		int R = 0;
-		int A = static_cast<int>(A_.registerValue);
-		int X = static_cast<int>(X_.registerValue);
-		int Y = static_cast<int>(Y_.registerValue);
+		const int A = static_cast<int>(A_.registerValue);
+		const int X = static_cast<int>(X_.registerValue);
+		const int Y = static_cast<int>(Y_.registerValue);
 
 		if (Y == 0)
 			R = A & X; // Bitweise AND-Verknüpfung von A und X
@@ -213,8 +352,7 @@ namespace Klangraum
 				// Schiebe befülltes GPR nach Registers
 				registers.push_back(reg);
 				if (DEBUG)
-					cout << reg.registerType << " | " << reg.registerName << " | " << reg.registerValue << " | "
-						 << " | " << reg.IOIndex << endl;
+					cout << "GPR: " << reg.registerType << " | " << reg.registerName << " | " << reg.registerValue << " | " << reg.IOIndex << endl;
 			}
 			else
 			{
@@ -250,13 +388,16 @@ namespace Klangraum
 			if (keyword == "itramsize")
 			{
 				iTRAMSize = stoi(tramSize);
+				// Größe des Delayline Vectors anpassen
+				smallDelayBuffer.resize(iTRAMSize, 0);
 				if (DEBUG)
 					cout << "iTRAMSize: " << iTRAMSize << endl;
-				// TODO: Delay Vector Resize?
 			}
 			else if (keyword == "xtramsize")
 			{
 				xTRAMSize = stoi(tramSize);
+				// Größe des Delayline Vectors anpassen
+				largeDelayBuffer.resize(xTRAMSize, 0);
 				if (DEBUG)
 					cout << "xTRAMSize: " << xTRAMSize << endl;
 			}
@@ -465,10 +606,14 @@ namespace Klangraum
 		ifstream file(path);  // Dateipfad zum Textfile (im Binary-Ordner)
 		string line;		  // einzelne Zeile
 		vector<string> lines; // mehrere Zeilen
+		if (DEBUG)
+			cout << "Lade File: " << path << endl;
 		if (file)
 		{
 			if (DEBUG)
-				cout << "Lade File: " << path << endl;
+				cout << "Fuehre Syntaxcheck durch. NOTE: Kommentarzeilen werden durch Leerzeilen ersetzt." << endl;
+			if (DEBUG)
+				printLine(80);
 			while (getline(file, line)) // Zeile für Zeile einlesen
 			{
 				// Entferne den Kommentaranteil
@@ -602,11 +747,9 @@ namespace Klangraum
 	}
 
 	// NOT CHECKED
-	// Implement a method to read a sample from each delay line (with linear interpolation).
+	// Implement a method to read a sample from each delay line.
 	// To do linear interpolation, you need to find the fractional part of the read position
 	// and interpolate between the two adjacent samples.
-
-	// linear interpolation: lerp(sample1, sample2, 0.5)
 
 	inline float FX8010::readSmallDelay(int position)
 	{
@@ -626,18 +769,12 @@ namespace Klangraum
 		int columnWidth = 12; // Spaltenbreite
 
 		// Zeile ausgeben
-		if (DEBUG)
-			std::cout << "INSTR" << std::setw(columnWidth) << instruction << " | ";
-		if (DEBUG)
-			std::cout << "R" << std::setw(columnWidth) << value1 << " | ";
-		if (DEBUG)
-			std::cout << "A" << std::setw(columnWidth) << value2 << " | ";
-		if (DEBUG)
-			std::cout << "X" << std::setw(columnWidth) << value3 << " | ";
-		if (DEBUG)
-			std::cout << "Y" << std::setw(columnWidth) << value4 << " | ";
-		if (DEBUG)
-			std::cout << "ACCU" << std::setw(columnWidth) << accumulator << std::endl;
+		std::cout << "INSTR" << std::setw(columnWidth) << instruction << " | ";
+		std::cout << "R" << std::setw(columnWidth) << value1 << " | ";
+		std::cout << "A" << std::setw(columnWidth) << value2 << " | ";
+		std::cout << "X" << std::setw(columnWidth) << value3 << " | ";
+		std::cout << "Y" << std::setw(columnWidth) << value4 << " | ";
+		std::cout << "ACCU" << std::setw(columnWidth) << accumulator << std::endl;
 	}
 
 	int FX8010::getInstructionCounter()
@@ -645,7 +782,7 @@ namespace Klangraum
 		return instructionCounter;
 	}
 
-	float FX8010::process(float inputBuffer)
+	float FX8010::process(const float inputBuffer)
 	{
 		bool isEND = false;
 		float outputSample = 0;
@@ -714,14 +851,15 @@ namespace Klangraum
 						// Set CCR register based on R
 						setCCR(R.registerValue);
 						break;
-					/*case LOG:
-						R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[X.registerValue], 0, 1.0);
+					case LOG:
+						// TODO: Y = sign
+						R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[static_cast<int>(X.registerValue)], -1.0, 1.0);
 						accumulator = R.registerValue;
 						break;
 					case EXP:
 						R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
 						accumulator = R.registerValue;
-						break;*/
+						break;
 					case MACW:
 						R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
 						accumulator = R.registerValue;
@@ -751,14 +889,14 @@ namespace Klangraum
 						break;
 					case SKIP:
 						// Wenn X = CCR, dann überspringe Y Instructions.
-						if (static_cast<int>(X.registerValue) == ccr)
+						if (static_cast<int>(X.registerValue) == registers[0].registerValue)
 							numSkip = static_cast<int>(Y.registerValue);
 						break;
 					case INTERP:
 						R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
 						accumulator = R.registerValue;
 						break;
-					/*case IDELAY:
+					case IDELAY:
 						if (R.registerType == READ)
 						{
 							A.registerValue = readSmallDelay(Y.registerValue); // Y = Adresse, (Y-2048) mit 11 Bit Shift
@@ -777,7 +915,7 @@ namespace Klangraum
 						{
 							writeLargeDelay(A.registerValue);
 						}
-						break;*/
+						break;
 					case END:
 						// End of sample cycle
 						isEND = true;
@@ -789,9 +927,8 @@ namespace Klangraum
 
 					instructionCounter++;
 
-					if (DEBUG && !isEND)
-						if (PRINT_REGISTERS)
-							printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
+					if (PRINT_REGISTERS && !isEND)
+						printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
 
 					// wenn R = OUTPUT Typ, an VST Output zurückgeben
 					if (R.registerType == OUTPUT)
@@ -805,6 +942,7 @@ namespace Klangraum
 					if (isEND)
 					{
 						// NOTE: not really needed, performance issue
+						// TODO: Extra Temp-Vector machen für schnelles Löschen?
 						/*for (auto &reg : registers)
 						{
 							if (reg.registerType == TEMP)
@@ -817,7 +955,6 @@ namespace Klangraum
 					// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
 					// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
 					// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
-					// GPR nach process()
 				}
 				else
 				{
@@ -826,7 +963,6 @@ namespace Klangraum
 						cout << "Skip instruction!" << endl;
 				}
 			}
-
 		} while (!isEND);
 		return 0;
 	}

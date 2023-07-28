@@ -22,12 +22,12 @@ using namespace std;
 #pragma warning(disable : 4244 4305 4715)
 
 // Nicht alle Defines werden genutzt
-#define E 2.71828 // schön zu haben
-#define PI 3.141592 // schön zu haben
-#define SAMPLERATE 48000 // originale Samplerate des DSP
-#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Loop später entfernen, da der Block-Loop vom Plugin bereitgestellt wird wird.
-#define DEBUG 1    // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 1    // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define E 2.71828         // schön zu haben
+#define PI 3.141592       // schön zu haben
+#define SAMPLERATE 48000  // originale Samplerate des DSP
+#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop vom VST-Plugin bereitgestellt.
+#define DEBUG 0           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
 {
@@ -36,8 +36,11 @@ namespace Klangraum
     public:
         FX8010();
         ~FX8010();
+
+        // Method to initialize lookup tables and other initialization tasks
+        void initialize();
         // Der eigentliche Prozess-Loop
-        float process(float inputSample);
+        float process(const float inputSample);
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
         // Textfile in 2D Vector einladen
@@ -130,7 +133,6 @@ namespace Klangraum
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
         int instructionCounter = 0;
-        int ccr = 0;
         int accumGuardBits = 0; // ?
         float inputBuffer[2];   // TODO: Stereo I/O Buffers
         float outputBuffer[2];
@@ -141,8 +143,7 @@ namespace Klangraum
             int registerType;         // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
             std::string registerName; // Name des Registers
             float registerValue;      // Wert des Registers
-            // bool isSaturated = false; // CCR keeps track of it
-            int IOIndex = 0;
+            int IOIndex = 0;          // 0 - Links, 1 - Rechts
         };
 
         // Vector, der die GPR enthaelt
@@ -151,13 +152,13 @@ namespace Klangraum
         // Struct, die eine Instruktion repraesentiert
         struct Instruction
         {
-            int opcode;             // Opcode-Nummer
-            int operand1;           // Erster Operand (Index des Registers im vector)
-            int operand2;           // Zweiter Operand (Index des Registers im vector)
-            int operand3;           // Dritter Operand (Index des Registers im vector)
-            int operand4;           // Vierter Operand (Index des Registers im vector)
-            bool hasInput = false;  // um nicht alle Instructions auf INPUT testen zu muessen
-            bool hasOutput = false; // um nicht alle Instructions auf OUTPUT testen zu muessen (sowieso nicht sinnvoll)
+            int opcode;     // Opcode-Nummer
+            int operand1;   // Erster Operand (Index des Registers im vector)
+            int operand2;   // Zweiter Operand (Index des Registers im vector)
+            int operand3;   // Dritter Operand (Index des Registers im vector)
+            int operand4;   // Vierter Operand (Index des Registers im vector)
+            bool hasInput;  // um nicht alle Instructions auf INPUT testen zu muessen
+            bool hasOutput; // um nicht alle Instructions auf OUTPUT testen zu muessen (sowieso nicht sinnvoll)
         };
 
         // Vector, der die Instruktionen enthaelt
@@ -187,24 +188,21 @@ namespace Klangraum
         int smallDelayWritePos = 0;
         int largeDelayWritePos = 0;
 
-        // Method to initialize lookup tables and other initialization tasks
-        void initialize();
-
         // CCR Register
-        inline void setCCR(float result);
+        inline void setCCR(const float result);
         inline int getCCR();
 
         // 32Bit Saturation
-        inline float saturate(float input, float threshold);
+        inline float saturate(const float input, const float threshold);
 
         // Lineare Interpolation mit Lookup-Table
         inline double linearInterpolate(double x, const std::vector<double> &lookupTable, double x_min, double x_max);
 
         // MACINTW ...
-        inline float wrapAround(float a);
+        inline float wrapAround(const float a);
 
         // ANDXOR Instruction
-        inline int logicOps(GPR &A, GPR &X_, GPR &Y_);
+        inline int logicOps(const GPR &A, const GPR &X_, const GPR &Y_);
 
         // TRAM Engine
         inline void setSmallDelayWritePos(int smallDelayWritePos);
@@ -224,7 +222,7 @@ namespace Klangraum
         int findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name);
 
         // Map registernames from sourcecode instruction to register indexes
-        int mapRegisterToIndex(const string &register_);
+        int mapRegisterToIndex(const string &registerName);
 
         // Definiere die Fehlercodes
         enum ErrorCode
@@ -243,6 +241,12 @@ namespace Klangraum
         MyError error;
         vector<MyError> errorList;
         int errorCounter = 1;
+
+        std::vector<double> createLogLookupTable(double x_min, double x_max, int numEntries, int exponent);
+        std::vector<double> createExpLookupTable(double x_min, double x_max, int numEntries, int exponent);
+        std::vector<double> mirrorYVector(const std::vector<double> &inputVector);
+        std::vector<double> concatenateVectors(const std::vector<double> &vector1, const std::vector<double> &vector2);
+        std::vector<double> negateVector(const std::vector<double> &inputVector);
     };
 
 } // namespace Klangraum

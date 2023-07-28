@@ -3,22 +3,31 @@
 // Flags für spezielle originalgeteue/vernachlässigbare Funktionalität z.B. TEMP GPR löschen, setCCR(), als neue Deklaration/Metadaten?
 // FLAG NO_TEMP_ERASE, NO_SETCCR
 // Präprozessor-Anweisungen für Debug/Release (if(DEBUG_LEVEL) entfernen) im kritischen process()
-// Soll Syntaxcheck/Loadfile ErrorList zurückgeben?
+// Soll Syntaxcheck/Loadfile ErrorList zurückgeben? Eigentlich nein, wenn beide Bool zurückgeben:
+/*if (fx8010->loadFile("testcode.da"))
+{
+    fx8010->process();
+}
+else
+{
+    // ErrorList über VST-Textfeld ausgeben
+    fx8010->getErrorList();
+}*/
 // const in allen Methodenargumenten verwenden, damit nicht zufällig Änderungen stattfinden
 // Testsample -1.0 bis 1.0
 // LOG, EXP Tables
-// Soll CCR, (READ, WRITE, AT) normale GPR sein? Damit liesse sich der Wert mit printRow() anzeigen und die Syntaxcheck vereinfachen.
 
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
 
-//using namespace Klangraum;
+// using namespace Klangraum;
 
 int main()
 {
     // Create an instance of FX8010 class
     Klangraum::FX8010 *fx8010 = new Klangraum::FX8010();
-
+    //Klangraum::FX8010 fx8010;
+    fx8010->initialize();
     // Vector mit linearen Sampledaten. Nur zum Testen!
     vector<vector<float>> testSample;
 
