@@ -5,11 +5,16 @@ itramsize 1200
 input in 
 control volume = 0.5 
 output out
-output out
+;output out
+static wr
 
 ; Instruktionen
-INTERP c, -0.25, in, 0.25
-MAC a, 0, in, volume
-MACINT in, 0, a, 2.0
-ACC3 out, a, 0, 1
+INTERP c, -0.25, in, 0.25 ; ok
+MAC a, 0, in, volume ; ok
+SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
+MAC a, 0, in, volume ; ok
+MACINT a, 0, a, 2.0 ; ok
+andxor a, 1, 1, 0 ; ok
+idelay write, wr, at, 100 ; not implemented, but syntaxcheck ok
+ACC3 out, a, 0, 1 ; ok
 end
