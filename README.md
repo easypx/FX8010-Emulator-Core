@@ -15,7 +15,7 @@ However, if we factor in the multi-core processing, we're able to emulate much m
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
 
 Usage:  
-- For console debug output change DEBUG 1 and PRINT_REGISTERS 1 in fx8010.h
+- For console debug output change DEBUG and PRINT_REGISTERS Macros in fx8010.h
 - Not all instructions are working, use Mono (numChannels = 1) for now
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below)
 
