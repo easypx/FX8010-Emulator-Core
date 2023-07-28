@@ -22,16 +22,16 @@ using namespace std;
 #pragma warning(disable : 4244 4305 4715)
 
 // Nicht alle Defines werden genutzt
-#define E 2.71828
-#define PI 3.141592
-#define SAMPLERATE 48000
-#define AUDIOBLOCKSIZE 512 // Nur zum Testen! Loop später entfernen, da der Block-Loop vom Plugin genutzt wird.
-#define DEBUG 1            // 0 = keine Konsoleausgaben, 1 = mit Konsoleausgaben
+#define E 2.71828 // schön zu haben
+#define PI 3.141592 // schön zu haben
+#define SAMPLERATE 48000 // originale Samplerate des DSP
+#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Loop später entfernen, da der Block-Loop vom Plugin bereitgestellt wird wird.
+#define DEBUG 1    // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define PRINT_REGISTERS 1    // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
 {
-
-    class FX8010 
+    class FX8010
     {
     public:
         FX8010();
@@ -135,18 +135,18 @@ namespace Klangraum
         float inputBuffer[2];   // TODO: Stereo I/O Buffers
         float outputBuffer[2];
 
-        // GPR Register
-        struct Register
+        // GPR - General Purpose Register
+        struct GPR
         {
             int registerType;         // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
             std::string registerName; // Name des Registers
             float registerValue;      // Wert des Registers
-            //bool isSaturated = false; // CCR keeps track of it
+            // bool isSaturated = false; // CCR keeps track of it
             int IOIndex = 0;
         };
 
-        // Vector, der die Register enthaelt
-        std::vector<Register> registers;
+        // Vector, der die GPR enthaelt
+        std::vector<GPR> registers;
 
         // Struct, die eine Instruktion repraesentiert
         struct Instruction
@@ -156,8 +156,8 @@ namespace Klangraum
             int operand2;           // Zweiter Operand (Index des Registers im vector)
             int operand3;           // Dritter Operand (Index des Registers im vector)
             int operand4;           // Vierter Operand (Index des Registers im vector)
-            bool hasInput = false;  // um nicht alle Instructions aud INPUT testen zu muessen
-            bool hasOutput = false; // um nicht alle Instructions aud OUTPUT testen zu muessen (nicht sinnvoll)
+            bool hasInput = false;  // um nicht alle Instructions auf INPUT testen zu muessen
+            bool hasOutput = false; // um nicht alle Instructions auf OUTPUT testen zu muessen (sowieso nicht sinnvoll)
         };
 
         // Vector, der die Instruktionen enthaelt
@@ -204,7 +204,7 @@ namespace Klangraum
         inline float wrapAround(float a);
 
         // ANDXOR Instruction
-        inline int logicOps(int A, int X, int Y);
+        inline int logicOps(GPR &A, GPR &X_, GPR &Y_);
 
         // TRAM Engine
         inline void setSmallDelayWritePos(int smallDelayWritePos);
@@ -215,13 +215,13 @@ namespace Klangraum
         inline void writeLargeDelay(float sample);
 
         // Debugging
-        void printRow(const float value1, const float value2, const float value3, const float value4, const double accumulator);
+        void printRow(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
 
         // Syntax Check
         bool syntaxCheck(const std::string &input);
 
-        // Register-Index zurückgeben
-        int findRegisterIndexByName(const std::vector<Register> &registers, const std::string &name);
+        // GPR-Index zurückgeben
+        int findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name);
 
         // Map registernames from sourcecode instruction to register indexes
         int mapRegisterToIndex(const string &register_);
