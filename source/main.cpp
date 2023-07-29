@@ -7,8 +7,9 @@
 
 int main()
 {
-
+    // Anzahl der Channels fuer Stereo
     int numChannels = 2;
+
     // Create an instance of FX8010 class
     Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
 
@@ -26,21 +27,23 @@ int main()
     }
 
     // Ausgabe des Testsamples
-    /*for (int j = 0; j < numChannels; j++)
-{
-    for (int i = 0; i < numSamples; i++)
-    {
-        cout << testSample[j][i] << endl;
-    }
-}*/
+    // for (int i = 0; i < numSamples; i++)
+    //{
+    //    cout << testSample[j][i] << endl;
+    //}
 
     if (fx8010->loadFile("testcode.da"))
     {
-        // Startzeitpunkt speichern
-        auto startTime = std::chrono::high_resolution_clock::now();
-
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
+
+        // Diese Liste mit Controltegistern wird VST als Label-Identifizierer fuer Slider, Knobs, usw. nutzen koennen.
+        vector<string> controlRegisters = fx8010->getControlRegisters();
+        cout << "Controlregisters: " << endl;
+        for (const auto &element : controlRegisters) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
+        {
+            cout << element << endl;
+        }
 
         // Lege I/O Buffer an
         std::vector<float> inputBuffer;
@@ -50,6 +53,9 @@ int main()
 
         // 4 virtuelle Sliderwerte
         std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
+
+        // Startzeitpunkt speichern
+        auto startTime = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
@@ -69,13 +75,10 @@ int main()
             outputBuffer = fx8010->process(inputBuffer);
 
             // DSP Output anzeigen
+            // NOTE: Anzeige beeinflusst Zeitmessung stark!
             cout << "Output (0): " << outputBuffer[0] << endl;
             cout << "Output (1): " << outputBuffer[1] << endl;
         }
-
-        // Beliebigen Registerwert anzeigen
-        // NOTE: Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
-        cout << "Registerwert: " << fx8010->getRegisterValue("ccr") << endl;
 
         // Endzeitpunkt speichern
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -87,6 +90,10 @@ int main()
         std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
                   << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
         cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) * static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
+
+        // Beliebigen Registerwert anzeigen
+        // NOTE: Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
+        cout << "Registerwert: " << fx8010->getRegisterValue("ccr") << endl;
     }
     else
     {

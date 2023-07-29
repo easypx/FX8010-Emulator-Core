@@ -7,6 +7,7 @@ xtramsize 10000
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 input in_r = 1
 control volume = 0.5 
+control pan = 0.5
 output out_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 output out_r = 1
 static rd

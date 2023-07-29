@@ -198,9 +198,14 @@ namespace Klangraum
 		return negatedVector;
 	}
 
+    vector<string> FX8010::getControlRegisters()
+    {
+        return controlRegisters;
+    } 
+	
 	// NOT CHECKED
-	// Slighty modified cases, which makes more sense. ChatGPT thinks the same way.
-	inline void FX8010::setCCR(const float result)
+    // Slighty modified cases, which makes more sense. ChatGPT thinks the same way.
+    inline void FX8010::setCCR(const float result)
 	{
 		if (result == 0)
 			registers[0].registerValue = 0x8; // 0b1000 | 8
@@ -373,6 +378,13 @@ namespace Klangraum
 			{
 				registerValue = match[3];
 			}
+
+			// Fuege zu Liste der Control Register zu
+			if (registerTyp == "control")
+			{
+				controlRegisters.push_back(registerName);
+			}
+
 			// wenn Registername nicht existiert (-1)
 			if (findRegisterIndexByName(registers, registerName) == -1)
 			{

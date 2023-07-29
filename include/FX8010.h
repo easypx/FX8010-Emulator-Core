@@ -58,6 +58,7 @@ namespace Klangraum
         std::vector<FX8010::MyError> &getErrorList();
         int setRegisterValue(const std::string &key, float value);
         float getRegisterValue(const std::string &key);
+        vector<string> getControlRegisters();
 
     private:
         // Enum for FX8010 opcodes
@@ -259,6 +260,9 @@ namespace Klangraum
         std::vector<double> negateVector(const std::vector<double> &inputVector);
 
         int numChannels;
+
+        vector<string> controlRegisters;
+        
     };
 
 } // namespace Klangraum
