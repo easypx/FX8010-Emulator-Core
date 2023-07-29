@@ -106,6 +106,17 @@ int main()
     else
     {
         cout << Klangraum::colorMap[Klangraum::COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." << Klangraum::colorMap[Klangraum::COLOR_NULL] << endl;
+      
+        // Zeige Fehlerliste an
+        vector<Klangraum::FX8010::MyError> errorList;
+        errorList.clear();
+        errorList = fx8010->getErrorList();
+
+        cout << "Fehlerliste: " << endl;
+        for (const auto &element : errorList) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
+        {
+            cout << element.errorDescription << " (" << element.errorRow << ")" << endl;
+        }
     }
     return 0;
 }

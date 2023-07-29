@@ -40,6 +40,9 @@ namespace Klangraum
 		errorMap[ERROR_ITRAMSIZE_TO_LARGE] = "iTRAM Size ueberschritten (max. 4800)";
 		errorMap[ERROR_XTRAMSIZE_TO_LARGE] = "xRAM Size ueberschritten (max. 48000)";
 
+		// Initialisieren
+		errorList.clear();
+
 		// First error is no error
 		error.errorDescription = errorMap[ERROR_NONE];
 		errorList.push_back(error);
@@ -198,14 +201,14 @@ namespace Klangraum
 		return negatedVector;
 	}
 
-    vector<string> FX8010::getControlRegisters()
-    {
-        return controlRegisters;
-    } 
-	
+	vector<string> FX8010::getControlRegisters()
+	{
+		return controlRegisters;
+	}
+
 	// NOT CHECKED
-    // Slighty modified cases, which makes more sense. ChatGPT thinks the same way.
-    inline void FX8010::setCCR(const float result)
+	// Slighty modified cases, which makes more sense. ChatGPT thinks the same way.
+	inline void FX8010::setCCR(const float result)
 	{
 		if (result == 0)
 			registers[0].registerValue = 0x8; // 0b1000 | 8
@@ -335,6 +338,11 @@ namespace Klangraum
 		largeDelayWritePos = largeDelayWritePos_;
 	}
 
+	// vector<Klangraum::FX8010::MyError> FX8010::getErrorList()
+	//{
+	//	return errorList;
+	// }
+
 	// NOT CHECKED
 	// Syntaxchecker/Parser/Mapper
 	// NOTE: Implementation ist "Just Good Enough". Eine genauere Auswertung und mehr Fehlermeldungen sind wünschenswert.
@@ -437,18 +445,17 @@ namespace Klangraum
 					else
 					{
 						reg.registerValue = stof(registerValue);
-						// return true;
 					}
 				}
 				else
 				{
 					reg.registerValue = 0;
-					// return true;
 				}
 				// Schiebe befülltes GPR nach Registers
 				registers.push_back(reg);
 				if (DEBUG)
 					cout << "GPR: " << reg.registerType << " | " << reg.registerName << " | " << reg.registerValue << " | " << reg.IOIndex << endl;
+				return true;
 			}
 			else
 			{
@@ -459,7 +466,6 @@ namespace Klangraum
 					cout << "Multiple Variabledenklaration" << endl;
 				return false;
 			}
-			return true;
 		}
 
 		// Teste auf Leerzeile
@@ -497,7 +503,6 @@ namespace Klangraum
 					smallDelayBuffer.resize(iTRAMSize, 0);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
-					return true;
 				}
 			}
 			else if (keyword == "xtramsize")
@@ -518,9 +523,9 @@ namespace Klangraum
 					largeDelayBuffer.resize(xTRAMSize, 0);
 					if (DEBUG)
 						cout << "xTRAMSize: " << xTRAMSize << endl;
-					return true;
 				}
 			}
+			return true;
 		}
 
 		// Teste auf Instruktionen
@@ -680,7 +685,6 @@ namespace Klangraum
 			// Kommt erstmal nicht zum Einsatz. Code wird in loadFile() von Kommentaren bereinigt.
 			if (DEBUG)
 				cout << "Kommentar gefunden" << endl;
-			return true;
 		}
 		// Wenn nichts zutrifft
 		else
@@ -692,6 +696,7 @@ namespace Klangraum
 			errorList.push_back(error);
 			return false;
 		}
+		return true;
 	}
 
 	// CHECKED
@@ -755,18 +760,23 @@ namespace Klangraum
 				cleanedCode += line;
 				cleanedCode += '\n';
 
+				// In Kleinbuchstaben umwandeln
+				for (char &c : line)
+				{
+					c = std::tolower(c);
+				}
 				// Zeile (String) in Vector schreiben
 				lines.push_back(line);
 			}
 
 			// Wandle alle Elemente in Kleinbuchstaben um
 			// NOTE: tolower() ist Lambda Funktion in transform()
-			std::transform(lines.begin(), lines.end(), lines.begin(), [](std::string str)
-						   {
-        for (char& c : str) {
-            c = std::tolower(c);
-        }
-        return str; });
+			/*	std::transform(lines.begin(), lines.end(), lines.begin(), [](std::string str)
+							   {
+			for (char& c : str) {
+				c = std::tolower(c);
+			}
+			return str; });*/
 
 			// Syntaxcheck/Parser/Mapper
 			//--------------------------
@@ -792,7 +802,6 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Kein 'END' gefunden" << endl;
-				// return false;
 			}
 
 			if (DEBUG)
@@ -802,18 +811,18 @@ namespace Klangraum
 			int numErrors = errorList.size();
 			if (numErrors > 1)
 			{
-				// if (DEBUG)
-				cout << colorMap[COLOR_RED] << "Syntaxfehler gefunden" << colorMap[COLOR_NULL] << endl; // Ausgabe Syntaxfehler mit Zeilennummer, beginnend mit 0
+				if (DEBUG)
+					cout << colorMap[COLOR_RED] << "Syntaxfehler gefunden" << colorMap[COLOR_NULL] << endl; // Ausgabe Syntaxfehler mit Zeilennummer, beginnend mit 0
 
 				for (int i = 1; i < numErrors; i++)
 				{
-					// if (DEBUG)
-					cout << errorList[i].errorDescription << " (" << errorList[i].errorRow << ")" << endl;
+					if (DEBUG)
+						cout << errorList[i].errorDescription << " (" << errorList[i].errorRow << ")" << endl;
 				}
 				if (DEBUG)
 					printLine(80);
-				// if (DEBUG)
-				//	cout << colorMap[COLOR_YELLOW] << "Bitte beachte: korrekte Schreibweise der Schluesselwoerter, keine mehrfachen \nDeklarationen von Variablen, keine Sonderzeichen, Dezimalzahlen mit '.', \nR darf kein Input sein, Buffern der Inputs wird empfohlen" << colorMap[COLOR_NULL] << endl;
+				if (DEBUG)
+					cout << colorMap[COLOR_YELLOW] << "Bitte beachte: korrekte Schreibweise der Schluesselwoerter, keine mehrfachen \nDeklarationen von Variablen, keine Sonderzeichen, Dezimalzahlen mit '.', \nR darf kein Input sein, Buffern der Inputs wird empfohlen" << colorMap[COLOR_NULL] << endl;
 				return false;
 			}
 			else
@@ -850,7 +859,7 @@ namespace Klangraum
 
 	// NOT CHECKED
 	// Gibt Referenz auf ErrorList zurück
-	std::vector<FX8010::MyError> &FX8010::getErrorList()
+	std::vector<FX8010::MyError> FX8010::getErrorList()
 	{
 		return errorList;
 	}

@@ -29,7 +29,7 @@ using namespace std;
 #define PI 3.141592       // schön zu haben
 #define SAMPLERATE 48000  // originale Samplerate des DSP
 #define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
-#define DEBUG 0         // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define DEBUG 0           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
 #define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
@@ -43,7 +43,7 @@ namespace Klangraum
         // Method to initialize lookup tables and other initialization tasks
         void initialize();
         // Der eigentliche Prozess-Loop
-        std::vector<float> process(const std::vector<float>& inputSamples);
+        std::vector<float> process(const std::vector<float> &inputSamples);
         float outputSamples[2] = {0, 0};
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
@@ -54,8 +54,7 @@ namespace Klangraum
             std::string errorDescription;
             int errorRow = 1;
         };
-        // TODO: Gib Referenz auf ErrorList zurück, Problematisch aber funktioniert so
-        std::vector<FX8010::MyError> &getErrorList();
+        std::vector<FX8010::MyError> getErrorList();
         int setRegisterValue(const std::string &key, float value);
         float getRegisterValue(const std::string &key);
         vector<string> getControlRegisters();
@@ -140,8 +139,8 @@ namespace Klangraum
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
         int instructionCounter = 0;
-        int accumGuardBits = 0; // ?
-        float inputBuffer[2] = {0};   // TODO: Stereo I/O Buffers
+        int accumGuardBits = 0;     // ?
+        float inputBuffer[2] = {0}; // TODO: Stereo I/O Buffers
         float outputBuffer[2] = {0};
 
         // GPR - General Purpose Register
@@ -189,7 +188,7 @@ namespace Klangraum
         // TODO: Brauchen wir das? Delay-Line Groesse wird in der Deklaration vereinbart.
         // Initialize the buffer sizes based on the desired delay lengths. Since you mentioned a small
         // delay of ~100ms and a large delay of ~10s for a 48kHz samplerate, you can calculate the buffer sizes as follows:
-        int smallDelaySize = 4800; // 100ms delay at 48kHz
+        int smallDelaySize = 4800;  // 100ms delay at 48kHz
         int largeDelaySize = 48000; // 1s delay at 48kHz
 
         int smallDelayWritePos = 0;
@@ -262,7 +261,6 @@ namespace Klangraum
         int numChannels;
 
         vector<string> controlRegisters;
-        
     };
 
 } // namespace Klangraum

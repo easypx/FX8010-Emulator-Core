@@ -20,7 +20,7 @@ MAC out_l, 0, in_l, volume
 ;LOG a, in_r, 7, 0
 MAC out_r, 0, in_r, volume
 
-INTERP c, -0.25, in_l, 0.25 ; ok
+INTERP a, -0.25, in_l, 0.25 ; ok
 SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
 MAC a, 0, in_l, volume ; ok
 MACINT a, 0, a, 2.0 ; ok
