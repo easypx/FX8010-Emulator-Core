@@ -234,7 +234,7 @@ namespace Klangraum
             ERROR_NONE = 0,
             ERROR_INVALID_INPUT,
             ERROR_DIVISION_BY_ZERO,
-            ERROR_DOUBLE_VAR_DECLARE,
+            ERROR_MULTIPLE_VAR_DECLARE,
             ERROR_VAR_NOT_DECLARED,
             ERROR_INPUT_FOR_R_NOT_ALLOWED,
             ERROR_NO_END_FOUND,

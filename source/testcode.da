@@ -3,6 +3,7 @@ static a ; Kommentar
 static b
 TEMP c = 1.0
 itramsize 1000
+xtramsize 10000
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 input in_r = 1
 control volume = 0.5 

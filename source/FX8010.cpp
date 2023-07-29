@@ -31,7 +31,7 @@ namespace Klangraum
 		errorMap[ERROR_NONE] = "Kein Fehler";
 		errorMap[ERROR_INVALID_INPUT] = "Ungültige Eingabe";
 		errorMap[ERROR_DIVISION_BY_ZERO] = "Division durch Null";
-		errorMap[ERROR_DOUBLE_VAR_DECLARE] = "Doppelte Variablendeklaration";
+		errorMap[ERROR_MULTIPLE_VAR_DECLARE] = "Mehrfache Variablendeklaration";
 		errorMap[ERROR_VAR_NOT_DECLARED] = "Variable nicht deklariert";
 		errorMap[ERROR_INPUT_FOR_R_NOT_ALLOWED] = "Verwendung von Input fuer R ist nicht erlaubt";
 		errorMap[ERROR_NO_END_FOUND] = "Kein 'END' gefunden";
@@ -294,13 +294,14 @@ namespace Klangraum
 		largeDelayWritePos = largeDelayWritePos_;
 	}
 
+	// NOT CHECKED
 	// Syntaxchecker/Parser/Mapper
 	bool FX8010::syntaxCheck(const std::string &input)
 	{
 		// verschiedene Kombinationen im Deklarationsteil, auch mehrfache Vorkommen
 		// std::regex pattern1(R"(^\s*(static|temp)\s+((?:\w+\s*(?:=\s*\d+(?:\.\d*)?)?\s*,?\s*)+)\s*$)");
 
-		// Deklarationen: static a | static b = 1.0
+		// Deklarationen: z.B. static a || static b = 1.0
 		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
@@ -323,7 +324,6 @@ namespace Klangraum
 
 		std::smatch match;
 
-		// CHECKED
 		// Teste auf Deklarationen: static a | static b = 1.0 (vorerst keine Mehrfachdeklarationen!)
 		//------------------------------------------------------------------------------------------
 		if (std::regex_match(input, match, pattern1))
@@ -354,7 +354,7 @@ namespace Klangraum
 					// NOTE: Kann eigentlich nicht passieren, weil die Regex auf Types prueft!
 					if (DEBUG)
 						std::cout << "Ungueltiger Typ: " << registerTyp << std::endl;
-					// return false;
+					return false;
 				}
 				reg.registerName = registerName;
 				if (!registerValue.empty())
@@ -377,20 +377,24 @@ namespace Klangraum
 							errorList.push_back(error);
 							if (DEBUG)
 								cout << "I/O Index zu gross" << endl;
+							return false;
 						}
 						else
 						{
 							reg.IOIndex = stoi(registerValue);
+							// return true;
 						}
 					}
 					else
 					{
 						reg.registerValue = stof(registerValue);
+						// return true;
 					}
 				}
 				else
 				{
 					reg.registerValue = 0;
+					// return true;
 				}
 				// Schiebe befülltes GPR nach Registers
 				registers.push_back(reg);
@@ -399,17 +403,16 @@ namespace Klangraum
 			}
 			else
 			{
-				error.errorDescription = errorMap[ERROR_DOUBLE_VAR_DECLARE];
+				error.errorDescription = errorMap[ERROR_MULTIPLE_VAR_DECLARE];
 				error.errorRow = errorCounter;
 				errorList.push_back(error);
 				if (DEBUG)
-					cout << "Doppelte Variabledenklaration" << endl;
-				// return false;
+					cout << "Multiple Variabledenklaration" << endl;
+				return false;
 			}
-
 			return true;
 		}
-		// CHECKED
+
 		// Teste auf Leerzeile
 		//------------------------------------------------------------------------------------------
 		else if (std::regex_match(input, pattern2))
@@ -419,7 +422,6 @@ namespace Klangraum
 			return true;
 		}
 
-		// CHECKED
 		// Teste auf Deklarationen: TRAM
 		//------------------------------------------------------------------------------------------
 		else if (std::regex_match(input, match, pattern3))
@@ -472,10 +474,8 @@ namespace Klangraum
 			}
 		}
 
-		// CHECKED
 		// Teste auf Instruktionen
 		//------------------------------------------------------------------------------------------
-
 		// Wenn gültige Instruktion
 		else if (std::regex_match(input, match, pattern4))
 		{
@@ -509,7 +509,7 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Variable nicht deklariert" << endl;
-				// return false;
+				return false;
 			}
 			else
 			{
@@ -521,7 +521,7 @@ namespace Klangraum
 					errorList.push_back(error);
 					if (DEBUG)
 						cout << "Verwendung von Input fuer R ist nicht erlaubt" << endl;
-					// return false;
+					return false;
 				}
 				else if (registers[instruction.operand1].registerType == OUTPUT)
 				{
@@ -542,7 +542,7 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Variable nicht deklariert" << endl;
-				// return false;
+				return false;
 			}
 			else
 			{
@@ -566,7 +566,7 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Variable nicht deklariert" << endl;
-				// return false;
+				return false;
 			}
 			else
 			{
@@ -592,7 +592,7 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Variable nicht deklariert" << endl;
-				// return false;
+				return false;
 			}
 			else
 			{
@@ -633,9 +633,9 @@ namespace Klangraum
 				cout << "Kommentar gefunden" << endl;
 			return true;
 		}
+		// Wenn nichts zutrifft
 		else
-		{
-			// Wenn nichts zutrifft
+		{			
 			if (DEBUG)
 				std::cout << "Ungueltige Syntax" << std::endl;
 			error.errorDescription = errorMap[ERROR_SYNTAX_NOT_VALID];
@@ -643,9 +643,9 @@ namespace Klangraum
 			errorList.push_back(error);
 			return false;
 		}
-		// return true;
 	}
 
+	// CHECKED
 	// Gibt gemappten Registerindex zurück
 	int FX8010::mapRegisterToIndex(const string &registerName)
 	{
