@@ -14,10 +14,10 @@ static wr
 ;static wr
 
 ; Instruktionen
-LOG a, in_l, 7, 0
-MAC out_l, 0, a, 1.0
-LOG a, in_r, 7, 0
-MAC out_r, 0, a, 1.0
+;LOG a, in_l, 7, 0
+MAC out_l, 0, in_l, volume
+;LOG a, in_r, 7, 0
+MAC out_r, 0, in_r, volume
 
 ;INTERP c, -0.25, in, 0.25 ; ok
 ;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok

@@ -41,19 +41,41 @@ int main()
 
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
+
+        // Lege I/O Buffer an
         std::vector<float> inputBuffer;
         inputBuffer.resize(numChannels);
         std::vector<float> outputBuffer;
         outputBuffer.resize(numChannels);
+
+        // 4 virtuelle Sliderwerte
+        std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
+
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
+            // Simuliere Sliderinput alle 8 Samples
+            if (i % 8 == 0)
+            {
+                fx8010->setRegisterValue("volume", sliderValues[i / 8]);
+            }
             // Nutze dasselbe testSample als Stereoinput
-            inputBuffer[0] = testSample[i]; // left
-            inputBuffer[1] = testSample[i]; // right
+            // inputBuffer[0] = testSample[i]; // AC-Testvalue
+            // inputBuffer[1] = testSample[i]; // AC-Testvalue
+
+            inputBuffer[0] = 1.0; // DC-Testvalue
+            inputBuffer[1] = 1.0; // DC-Testvalue
+
+            // Hier erfolgt die Berechung
             outputBuffer = fx8010->process(inputBuffer);
-            cout << "Output (links): " << outputBuffer[0] << endl;
-            cout << "Output (rechts): " << outputBuffer[1] << endl;
+
+            // DSP Output anzeigen
+            cout << "Output (0): " << outputBuffer[0] << endl;
+            cout << "Output (1): " << outputBuffer[1] << endl;
         }
+
+        // Beliebigen Registerwert anzeigen
+        // NOTE: Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
+        cout << "Registerwert: " << fx8010->getRegisterValue("ccr") << endl;
 
         // Endzeitpunkt speichern
         auto endTime = std::chrono::high_resolution_clock::now();

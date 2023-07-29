@@ -56,6 +56,8 @@ namespace Klangraum
         };
         // TODO: Gib Referenz auf ErrorList zurück, Problematisch aber funktioniert so
         std::vector<FX8010::MyError> &getErrorList();
+        int setRegisterValue(const std::string &key, float value);
+        float getRegisterValue(const std::string &key);
 
     private:
         // Enum for FX8010 opcodes

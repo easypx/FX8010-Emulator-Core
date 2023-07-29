@@ -215,6 +215,42 @@ namespace Klangraum
 	}
 
 	// NOT CHECKED
+	// Beschreibe ein Register von VST aus z.B. Sliderinput
+	int FX8010::setRegisterValue(const std::string &key, float value)
+	{
+		bool found = false;
+		float newValue = 0;
+		for (auto &element : registers)
+		{
+			if (element.registerName == key)
+			{
+				element.registerValue = value;
+				newValue = element.registerValue;
+				found = true;
+				break;
+			}
+		}
+		if (found)
+		{
+			return 0;
+		}
+		return 1;
+	};
+
+	// NOT CHECKED
+	float FX8010::getRegisterValue(const std::string &key)
+	{
+		for (const auto &element : registers)
+		{
+			if (element.registerName == key)
+			{
+				return element.registerValue;
+			}
+		}
+		return 1; // Or any other default value you want to return if the element is not found
+	}
+
+	// NOT CHECKED
 	inline int FX8010::getCCR()
 	{
 		return registers[0].registerValue;
@@ -635,7 +671,7 @@ namespace Klangraum
 		}
 		// Wenn nichts zutrifft
 		else
-		{			
+		{
 			if (DEBUG)
 				std::cout << "Ungueltige Syntax" << std::endl;
 			error.errorDescription = errorMap[ERROR_SYNTAX_NOT_VALID];
