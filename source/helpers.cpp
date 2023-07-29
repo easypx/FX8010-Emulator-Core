@@ -1,8 +1,9 @@
+// Copyright 2023 Klangraum
+
 #include "../include/helpers.h"
 
 namespace Klangraum
 {
-
     // Funktion zum Entfernen führender und nachfolgender Leerzeichen
     std::string trim(const std::string &str)
     {
@@ -33,10 +34,10 @@ namespace Klangraum
         {COLOR_DEFAULT, "\033[38m"},
         {COLOR_NULL, "\033[0m"}};
 
-void printLine(int count)
-{
-    std::string line(count, '-');
-    std::cout << line << std::endl;
-}
+    void printLine(int count)
+    {
+        std::string line(count, '-');
+        std::cout << line << std::endl;
+    }
 
 } // namespace Klangraum

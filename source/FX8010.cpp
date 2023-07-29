@@ -1,13 +1,19 @@
+// Copyright 2023 Klangraum
+
 // IDEA: Map mit Registern statt Vector, Zugriff ueber RegisterName
-// IDEA: Sourcecode mit Stringstream direkt auswerten (ChatGPT Source in /temp)
+// IDEA: Sourcecode mit Stringstream direkt auswerten (ChatGPT's Idee, Source in /temp)
 
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
 
+// Namespace Klangraum
 namespace Klangraum
 {
+	FX8010::FX8010()
+	{
+		initialize();
+	};
 
-	FX8010::FX8010(){};
 	FX8010::~FX8010(){};
 
 	void FX8010::initialize()
@@ -18,7 +24,7 @@ namespace Klangraum
 		if (DEBUG)
 			cout << "Initialisiere den DSP..." << endl;
 
-		// Erstelle die Fehler-Map
+		// Erstelle Fehler-Map
 		//--------------------------------------------------------------------------------
 		if (DEBUG)
 			cout << "Erstelle die Fehler-Map" << endl;
@@ -37,7 +43,7 @@ namespace Klangraum
 		// Spezialregister
 		//--------------------------------------------------------------------------------
 		// Lege CCR Register an. Wir nutzen es wie ein GPR.
-		// NOTE: Map wäre besser, um über Stringlabel zu identifizieren.
+		// NOTE: Map wäre in Zukunft besser, um GPR oder Instruktion über Stringlabel zu identifizieren.
 		if (DEBUG)
 			cout << "Lege Spezialregister an (CCR, READ, WRTIE, AT)" << endl;
 
@@ -50,7 +56,8 @@ namespace Klangraum
 
 		// LOG, EXP Tables anlegen (Wertebereich: -1.0 bis 1.0)
 		//--------------------------------------------------------------------------------
-		// Mehrere Lookup Tables in einem Vector
+		// Schar von Lookup Tables in einem Vector
+		// TODO(Klangraum): sign
 		if (DEBUG)
 			cout << "Erzeuge LOG, EXP Lookuptables" << endl;
 
@@ -63,7 +70,7 @@ namespace Klangraum
 		lookupTablesExp.reserve(numExponent - 1);
 
 		// Populate lookupTablesLog with lookup tables for different i values
-		// Tabellen mit 4 Vorzeichen und 32 Exponenten je 32 Werte = 4096 Float Werte (16384 Bytes) (2x für LOG und EXP)
+		// Tabellen mit (4 Vorzeichen (sign)) und 31 Exponenten je 32 Werte (2x für LOG und EXP)
 		for (int i = 1; i < numExponent; i++)
 		{
 			std::vector<double> lookupTableLog = createLogLookupTable(0, 1.0, numEntries, i);
@@ -71,39 +78,44 @@ namespace Klangraum
 			temp.resize(32); // Initialisierung mit 0
 			// an Y-Achse spiegeln
 			temp = mirrorYVector(lookupTableLog);
-			// letztes Element, jetzt 0, löschen
+			// letztes Element, jetzt 0, löschen, um doppelte 0 zu vermeiden
 			// QUESTION: Brauchen wir das?
 			// temp.pop_back();
 			// Negieren
-			temp = negateVector(temp);
+			temp = negateVector(temp); // = MirrorX
 			// Verknüpfen Sie die beiden Vektoren
 			temp = concatenateVectors(temp, lookupTableLog);
 			temp.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
-			// Schiebe neuen Vector in die Sammlung von LOG Vectoren
+			// Schiebe neuen Vector in die Schar von LOG Vektoren
 			lookupTablesLog.push_back(temp);
 
 			std::vector<double> lookupTableExp = createExpLookupTable(0, 1.0, numEntries, i);
 			temp.resize(32); // Initialisierung mit 0
 			// an Y-Achse spiegeln
 			temp = mirrorYVector(lookupTableExp);
-			// letztes Element, jetzt 0, löschen
+			// letztes Element, jetzt 0, löschen, um doppelte 0 zu vermeiden
 			// QUESTION: Brauchen wir das?
 			// temp.pop_back();
 			// Negieren
-			temp = negateVector(temp);
+			temp = negateVector(temp); // = MirrorX
 			// Verknüpfen Sie die beiden Vektoren
 			temp = concatenateVectors(temp, lookupTableExp);
 			temp.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
-			// Schiebe neuen Vector in die Sammlung von LOG Vectoren
+			// Schiebe neuen Vector in die Schar von EXP Vektoren
 			lookupTablesExp.push_back(temp);
 		}
 
 		// Delaylines
 		//--------------------------------------------------------------------------------
-		// Speicher Allocation nicht ganz klar. Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor.
+		// Speicherallokation nicht ganz klar. Dauert resize() zu lange?
+		// Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor.
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
+		if (DEBUG)
+			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
 		smallDelayBuffer.reserve(4800);	 // 100ms
 		largeDelayBuffer.reserve(48000); // 1s
+
+		// I/O Buffers initialisieren?
 
 		if (DEBUG)
 			printLine(80);
@@ -269,16 +281,17 @@ namespace Klangraum
 	}
 
 	// Setzen der Schreibposition in der Microcode Deklaration
-	inline void FX8010::setSmallDelayWritePos(int smallDelayWritePos)
+	inline void FX8010::setSmallDelayWritePos(int smallDelayWritePos_)
 	{
-		smallDelayWritePos = smallDelayWritePos;
+		smallDelayWritePos = smallDelayWritePos_;
 	}
 
-	inline void FX8010::setLargeDelayWritePos(int largeDelayWritePos)
+	inline void FX8010::setLargeDelayWritePos(int largeDelayWritePos_)
 	{
-		largeDelayWritePos = largeDelayWritePos;
+		largeDelayWritePos = largeDelayWritePos_;
 	}
 
+	// Syntaxchecker/Parser/Mapper
 	bool FX8010::syntaxCheck(const std::string &input)
 	{
 		// verschiedene Kombinationen im Deklarationsteil, auch mehrfache Vorkommen
@@ -313,7 +326,7 @@ namespace Klangraum
 		if (std::regex_match(input, match, pattern1))
 		{
 			if (DEBUG)
-				cout << "Deklaration Variable gefunden" << endl;
+				cout << "Deklaration gefunden" << endl;
 			std::string registerTyp = match[1];
 			std::string registerName = match[2];
 			std::string registerValue = "";
@@ -326,7 +339,7 @@ namespace Klangraum
 			{
 				// Lege neues Temp-GPR an
 				GPR reg;
-
+				reg = {0, "", 0, 0}; // Initialisieren
 				// Überprüfen, ob der String in der Map existiert
 				if (typeMap.find(registerTyp) != typeMap.end())
 				{
@@ -392,6 +405,7 @@ namespace Klangraum
 				smallDelayBuffer.resize(iTRAMSize, 0);
 				if (DEBUG)
 					cout << "iTRAMSize: " << iTRAMSize << endl;
+				return true;
 			}
 			else if (keyword == "xtramsize")
 			{
@@ -400,8 +414,8 @@ namespace Klangraum
 				largeDelayBuffer.resize(xTRAMSize, 0);
 				if (DEBUG)
 					cout << "xTRAMSize: " << xTRAMSize << endl;
+				return true;
 			}
-			return true;
 		}
 
 		// CHECKED
@@ -424,6 +438,7 @@ namespace Klangraum
 			// Instructionname
 			//------------------------------------------------------------------------------------------
 			Instruction instruction;
+			instruction = {0, 0, 0, 0, 0, 0, 0};
 			int instructionName = opcodeMap[keyword];
 			instruction.opcode = instructionName;
 			if (DEBUG)
@@ -514,6 +529,7 @@ namespace Klangraum
 
 			// GPR Y
 			//------------------------------------------------------------------------------------------
+
 			instruction.operand4 = mapRegisterToIndex(Y);
 			if (instruction.operand4 == -1)
 			{
@@ -611,7 +627,7 @@ namespace Klangraum
 		if (file)
 		{
 			if (DEBUG)
-				cout << "Fuehre Syntaxcheck durch. NOTE: Kommentarzeilen werden durch Leerzeilen ersetzt." << endl;
+				cout << "Parse Quellcode. NOTE: Kommentarzeilen werden durch Leerzeilen ersetzt." << endl;
 			if (DEBUG)
 				printLine(80);
 			while (getline(file, line)) // Zeile für Zeile einlesen
@@ -643,12 +659,8 @@ namespace Klangraum
 
 			// Syntaxcheck/Parser/Mapper
 			//--------------------------
-			// Überprüfe zeilenweise auf bestimmtes Regex-Muster
-			// TODO: Wenn (nicht)bekannt verzweige in entsprechende Auswertung des Schlüsselworts -> Art des Fehlers ausgeben
-			//   1. Keyword erkennen
-			//   2. Keyword entfernen und Rest erkennen (jedes mögliche Muster einzeln)
-			//   3. genaue Fehlerbeschreibung erzeugen
-			//   4. Fehlercode zurückgeben und über Map ausgeben
+			// TODO: Überprüfe jede mögliche Deklaration/Instruktion mit bestimmtem Regex-Muster.
+			// zusätzlich Range-Check, ...
 
 			for (const string &line : lines)
 			{
@@ -769,7 +781,7 @@ namespace Klangraum
 		int columnWidth = 12; // Spaltenbreite
 
 		// Zeile ausgeben
-		std::cout << "INSTR" << std::setw(columnWidth) << instruction << " | ";
+		std::cout << "INSTR" << std::setw(columnWidth / 2) << instruction << " | ";
 		std::cout << "R" << std::setw(columnWidth) << value1 << " | ";
 		std::cout << "A" << std::setw(columnWidth) << value2 << " | ";
 		std::cout << "X" << std::setw(columnWidth) << value3 << " | ";
@@ -790,7 +802,6 @@ namespace Klangraum
 		// Durchlaufen der Instruktionen und Ausfuehren des Emulators
 		do
 		{
-
 			for (auto &instruction : instructions)
 			{
 				if (numSkip == 0)
@@ -959,7 +970,7 @@ namespace Klangraum
 				else
 				{
 					numSkip = (numSkip > 0) ? --numSkip : 0;
-					if (DEBUG)
+					if (PRINT_REGISTERS)
 						cout << "Skip instruction!" << endl;
 				}
 			}

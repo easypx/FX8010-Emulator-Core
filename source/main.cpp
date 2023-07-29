@@ -1,21 +1,4 @@
-// TODO:
-// getErrorList(), um Fehler im VST anzuzeigen
-// Flags für spezielle originalgeteue/vernachlässigbare Funktionalität z.B. TEMP GPR löschen, setCCR(), als neue Deklaration/Metadaten?
-// FLAG NO_TEMP_ERASE, NO_SETCCR
-// Präprozessor-Anweisungen für Debug/Release (if(DEBUG_LEVEL) entfernen) im kritischen process()
-// Soll Syntaxcheck/Loadfile ErrorList zurückgeben? Eigentlich nein, wenn beide Bool zurückgeben:
-/*if (fx8010->loadFile("testcode.da"))
-{
-    fx8010->process();
-}
-else
-{
-    // ErrorList über VST-Textfeld ausgeben
-    fx8010->getErrorList();
-}*/
-// const in allen Methodenargumenten verwenden, damit nicht zufällig Änderungen stattfinden
-// Testsample -1.0 bis 1.0
-// LOG, EXP Tables
+// Copyright 2023 Klangraum
 
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
@@ -26,8 +9,7 @@ int main()
 {
     // Create an instance of FX8010 class
     Klangraum::FX8010 *fx8010 = new Klangraum::FX8010();
-    //Klangraum::FX8010 fx8010;
-    fx8010->initialize();
+
     // Vector mit linearen Sampledaten. Nur zum Testen!
     vector<vector<float>> testSample;
 
@@ -45,7 +27,7 @@ int main()
         for (int i = 0; i < numSamples; i++)
         {
             float value = static_cast<float>(i) / (numSamples - 1); // Wertebereich von 0 bis 1.0
-            testSample[j].push_back(value / ((float)j + 1));
+            testSample[j].push_back(value / (static_cast<float>(j + 1)));
         }
     }
 
@@ -83,12 +65,15 @@ int main()
 
         // Ausgabe der gemessenen Zeit in Mikrosekunden
         std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
-                  << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
-        cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / (float)SAMPLERATE * (float)AUDIOBLOCKSIZE * 1000000.0 << " Mikrosekunden" << endl;
+                  << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" <<
+                  AUDIOBLOCKSIZE << " Samples)." << std::endl;
+        cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) *
+        static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
     }
     else
     {
-        cout << Klangraum::colorMap[Klangraum::COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." << Klangraum::colorMap[Klangraum::COLOR_NULL] << endl;
+        cout << Klangraum::colorMap[Klangraum::COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." <<
+        Klangraum::colorMap[Klangraum::COLOR_NULL] << endl;
     }
     return 0;
 }

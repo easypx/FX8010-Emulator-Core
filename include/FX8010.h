@@ -1,3 +1,5 @@
+// Copyright 2023 Klangraum
+
 #ifndef FX8010_H
 #define FX8010_H
 
@@ -26,8 +28,8 @@ using namespace std;
 #define PI 3.141592       // schön zu haben
 #define SAMPLERATE 48000  // originale Samplerate des DSP
 #define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop vom VST-Plugin bereitgestellt.
-#define DEBUG 0           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define DEBUG 1         // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define PRINT_REGISTERS 1 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
 {
@@ -134,8 +136,8 @@ namespace Klangraum
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
         int instructionCounter = 0;
         int accumGuardBits = 0; // ?
-        float inputBuffer[2];   // TODO: Stereo I/O Buffers
-        float outputBuffer[2];
+        float inputBuffer[2] = {0};   // TODO: Stereo I/O Buffers
+        float outputBuffer[2] = {0};
 
         // GPR - General Purpose Register
         struct GPR
