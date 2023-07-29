@@ -28,8 +28,8 @@ using namespace std;
 #define E 2.71828         // schön zu haben
 #define PI 3.141592       // schön zu haben
 #define SAMPLERATE 48000  // originale Samplerate des DSP
-#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop vom VST-Plugin bereitgestellt.
-#define DEBUG 1         // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
+#define DEBUG 0         // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
 #define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
@@ -47,7 +47,7 @@ namespace Klangraum
         float outputSamples[2] = {0, 0};
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
-        // Textfile in 2D Vector einladen
+        // Sourcecode laden
         bool loadFile(const string &path);
         struct MyError // Vorwärtsdeklaration notwendig!
         {

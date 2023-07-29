@@ -337,6 +337,7 @@ namespace Klangraum
 
 	// NOT CHECKED
 	// Syntaxchecker/Parser/Mapper
+	// NOTE: Implementation ist "Just Good Enough". Eine genauere Auswertung und mehr Fehlermeldungen sind wünschenswert.
 	bool FX8010::syntaxCheck(const std::string &input)
 	{
 		// verschiedene Kombinationen im Deklarationsteil, auch mehrfache Vorkommen

@@ -2,6 +2,7 @@
 
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
+#include <chrono>
 
 // using namespace Klangraum;
 
@@ -29,14 +30,11 @@ int main()
     // Ausgabe des Testsamples
     // for (int i = 0; i < numSamples; i++)
     //{
-    //    cout << testSample[j][i] << endl;
+    //    cout << testSample[i] << endl;
     //}
 
     if (fx8010->loadFile("testcode.da"))
     {
-        // Call the process() method to execute the instructions
-        // Here we do Stereo processing.
-
         // Diese Liste mit Controltegistern wird VST als Label-Identifizierer fuer Slider, Knobs, usw. nutzen koennen.
         vector<string> controlRegisters = fx8010->getControlRegisters();
         cout << "Controlregisters: " << endl;
@@ -57,6 +55,8 @@ int main()
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
 
+        // Call the process() method to execute the instructions
+        // Here we do Stereo processing.
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
             // Simuliere Sliderinput alle 8 Samples
@@ -76,24 +76,32 @@ int main()
 
             // DSP Output anzeigen
             // NOTE: Anzeige beeinflusst Zeitmessung stark!
-            cout << "Output (0): " << outputBuffer[0] << endl;
-            cout << "Output (1): " << outputBuffer[1] << endl;
+            if (DEBUG)
+            {
+                cout << "Output (0): " << outputBuffer[0] << endl;
+                cout << "Output (1): " << outputBuffer[1] << endl;
+            }
         }
 
-        // Endzeitpunkt speichern
-        auto endTime = std::chrono::high_resolution_clock::now();
+        if (!(DEBUG || PRINT_REGISTERS))
+        {
+            // Endzeitpunkt speichern
+            auto endTime = std::chrono::high_resolution_clock::now();
 
-        // Berechnen der Differenz zwischen Start- und Endzeitpunkt
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+            // Berechnen der Differenz zwischen Start- und Endzeitpunkt
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
 
-        // Ausgabe der gemessenen Zeit in Mikrosekunden
-        std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
-                  << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
-        cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) * static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
+            // Ausgabe der gemessenen Zeit in Mikrosekunden
+            std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
+                      << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
+            cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) * static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
+        }
 
         // Beliebigen Registerwert anzeigen
         // NOTE: Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
-        cout << "Registerwert: " << fx8010->getRegisterValue("ccr") << endl;
+        string testRegister = "c";
+        float value = fx8010->getRegisterValue(testRegister);
+        cout << "Registerwert fuer '" << testRegister << "': " << value << endl;
     }
     else
     {
