@@ -37,13 +37,13 @@ namespace Klangraum
     class FX8010
     {
     public:
-        FX8010();
+        FX8010(int numChannels);
         ~FX8010();
 
         // Method to initialize lookup tables and other initialization tasks
         void initialize();
         // Der eigentliche Prozess-Loop
-        std::array<float, 2> process(const std::array<float, 2>& inputSamples);
+        std::vector<float> process(const std::vector<float>& inputSamples);
         float outputSamples[2] = {0, 0};
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
@@ -186,8 +186,8 @@ namespace Klangraum
         // TODO: Brauchen wir das? Delay-Line Groesse wird in der Deklaration vereinbart.
         // Initialize the buffer sizes based on the desired delay lengths. Since you mentioned a small
         // delay of ~100ms and a large delay of ~10s for a 48kHz samplerate, you can calculate the buffer sizes as follows:
-        int smallDelaySize = static_cast<int>(0.1f * SAMPLERATE); // 100ms delay at 48kHz
-        int largeDelaySize = static_cast<int>(1.0f * SAMPLERATE); // 1s delay at 48kHz
+        int smallDelaySize = 4800; // 100ms delay at 48kHz
+        int largeDelaySize = 48000; // 1s delay at 48kHz
 
         int smallDelayWritePos = 0;
         int largeDelayWritePos = 0;
@@ -237,7 +237,11 @@ namespace Klangraum
             ERROR_DOUBLE_VAR_DECLARE,
             ERROR_VAR_NOT_DECLARED,
             ERROR_INPUT_FOR_R_NOT_ALLOWED,
-            ERROR_NO_END_FOUND
+            ERROR_NO_END_FOUND,
+            ERROR_IO_INDEX_TOO_LARGE,
+            ERROR_SYNTAX_NOT_VALID,
+            ERROR_ITRAMSIZE_TO_BIG,
+            ERROR_XTRAMSIZE_TO_BIG
             // Weitere Fehlercodes hier...
         };
 
@@ -251,6 +255,8 @@ namespace Klangraum
         std::vector<double> mirrorYVector(const std::vector<double> &inputVector);
         std::vector<double> concatenateVectors(const std::vector<double> &vector1, const std::vector<double> &vector2);
         std::vector<double> negateVector(const std::vector<double> &inputVector);
+
+        int numChannels;
     };
 
 } // namespace Klangraum

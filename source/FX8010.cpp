@@ -9,7 +9,7 @@
 // Namespace Klangraum
 namespace Klangraum
 {
-	FX8010::FX8010()
+	FX8010::FX8010(int channels) : numChannels(channels)
 	{
 		initialize();
 	};
@@ -35,6 +35,10 @@ namespace Klangraum
 		errorMap[ERROR_VAR_NOT_DECLARED] = "Variable nicht deklariert";
 		errorMap[ERROR_INPUT_FOR_R_NOT_ALLOWED] = "Verwendung von Input fuer R ist nicht erlaubt";
 		errorMap[ERROR_NO_END_FOUND] = "Kein 'END' gefunden";
+		errorMap[ERROR_IO_INDEX_TOO_LARGE] = "I/O Index zu gross";
+		errorMap[ERROR_SYNTAX_NOT_VALID] = "Ungueltige Syntax";
+		errorMap[ERROR_ITRAMSIZE_TO_BIG] = "iTRAM Size ueberschritten (max. 4800)";
+		errorMap[ERROR_XTRAMSIZE_TO_BIG] = "xRAM Size ueberschritten (max. 48000)";
 
 		// First error is no error
 		error.errorDescription = errorMap[ERROR_NONE];
@@ -116,7 +120,6 @@ namespace Klangraum
 		largeDelayBuffer.reserve(48000); // 1s
 
 		// I/O Buffers initialisieren?
-
 		if (DEBUG)
 			printLine(80);
 	}
@@ -298,16 +301,16 @@ namespace Klangraum
 		// std::regex pattern1(R"(^\s*(static|temp)\s+((?:\w+\s*(?:=\s*\d+(?:\.\d*)?)?\s*,?\s*)+)\s*$)");
 
 		// Deklarationen: static a | static b = 1.0
-		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const|itramsize|xtramsize|read|write|at|ccr)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
+		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
 		std::regex pattern2(R"(^\s*$)");
 
 		// tramsize im Deklarationsteil
-		std::regex pattern3(R"(^(itramsize|xtramsize)\s+(\d+)$)");
+		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)$)");
 
 		// check instructions TODO: all instructions
-		std::regex pattern4(R"(^\s*(mac|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|end|idelay|xdelay)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*$)");
+		std::regex pattern4(R"(^\s*(mac|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*$)");
 
 		// check metadata TODO: ...
 		std::regex pattern5(R"(^\s*(comment|name|guid)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.]+)\s*$)");
@@ -358,13 +361,27 @@ namespace Klangraum
 				{
 					// Wenn Input oder Output Variable, dann uebernehme Value als IOIndex
 					// NOTE: Hier gibt es einen Unterschied zu KX-Driver! Dieser hat keine Definition fuer
-					// IOIndex. Die In-und Outputs werden inkrementell erzeugt und können beliebig verknüpft werden.
-					// In diesem Emulator wird nur Stereo Processing gemacht, d.h. wir müssen bei der Definition 
-					// IOindizes angeben.
-					// TODO(Klangraum): Evtl. spaeter andere Syntax z.B input in, 0?
+					// IOIndex. Die In-und Outputs werden dort inkrementell erzeugt und können beliebig verknüpft werden.
+					// In diesem Emulator wird nur Stereo Processing gemacht, d.h. wir müssen bei der Definition
+					// IOindizes angeben. Wir könnten theoretisch auch Multichannelprocessing machen und unsere I/O
+					// Indizes frei wählen.
+					// TODO(Klangraum): Evtl. spaeter andere Syntax z.B input in, 0/1 oder einfach input in_l/in_r?
 					if (registerTyp == "input" || registerTyp == "output")
 					{
-						reg.IOIndex = stoi(registerValue);
+						// Wenn im Sourcecode mehr I/O deklariert werden als der Initialisierungswert.
+						// TODO: I/O-Initialisierung im Sourcecode?
+						if (stoi(registerValue) > numChannels - 1)
+						{
+							error.errorDescription = errorMap[ERROR_IO_INDEX_TOO_LARGE];
+							error.errorRow = errorCounter;
+							errorList.push_back(error);
+							if (DEBUG)
+								cout << "I/O Index zu gross" << endl;
+						}
+						else
+						{
+							reg.IOIndex = stoi(registerValue);
+						}
 					}
 					else
 					{
@@ -398,7 +415,7 @@ namespace Klangraum
 		else if (std::regex_match(input, pattern2))
 		{
 			if (DEBUG)
-				cout << "Leerzeile gefunden" << endl;
+				cout << "Leerzeile oder Auskommentierung gefunden" << endl;
 			return true;
 		}
 
@@ -414,28 +431,56 @@ namespace Klangraum
 			if (keyword == "itramsize")
 			{
 				iTRAMSize = stoi(tramSize);
-				// Größe des Delayline Vectors anpassen
-				smallDelayBuffer.resize(iTRAMSize, 0);
-				if (DEBUG)
-					cout << "iTRAMSize: " << iTRAMSize << endl;
-				return true;
+				if (iTRAMSize > 4800)
+				{
+					if (DEBUG)
+						cout << "iTRAMSize zu gross (max. 4800)" << endl;
+					error.errorDescription = errorMap[ERROR_ITRAMSIZE_TO_BIG];
+					error.errorRow = errorCounter;
+					errorList.push_back(error);
+					return false;
+				}
+				else
+				{
+					// Größe des Delayline Vectors anpassen und initialisieren
+					smallDelayBuffer.resize(iTRAMSize, 0);
+					if (DEBUG)
+						cout << "iTRAMSize: " << iTRAMSize << endl;
+					return true;
+				}
 			}
 			else if (keyword == "xtramsize")
 			{
 				xTRAMSize = stoi(tramSize);
-				// Größe des Delayline Vectors anpassen
-				largeDelayBuffer.resize(xTRAMSize, 0);
-				if (DEBUG)
-					cout << "xTRAMSize: " << xTRAMSize << endl;
-				return true;
+				if (xTRAMSize > 48000)
+				{
+					if (DEBUG)
+						cout << "xTRAMSize zu gross (max. 48000)" << endl;
+					error.errorDescription = errorMap[ERROR_XTRAMSIZE_TO_BIG];
+					error.errorRow = errorCounter;
+					errorList.push_back(error);
+					return false;
+				}
+				else
+				{
+					// Größe des Delayline Vectors anpassen
+					largeDelayBuffer.resize(xTRAMSize, 0);
+					if (DEBUG)
+						cout << "xTRAMSize: " << xTRAMSize << endl;
+					return true;
+				}
 			}
 		}
 
 		// CHECKED
 		// Teste auf Instruktionen
 		//------------------------------------------------------------------------------------------
+
+		// Wenn gültige Instruktion
 		else if (std::regex_match(input, match, pattern4))
 		{
+			Instruction instruction;
+			instruction = {0, 0, 0, 0, 0, 0, 0}; // initialisierung
 			if (DEBUG)
 				cout << "Instruktion gefunden" << endl;
 			std::string keyword = match[1];
@@ -450,12 +495,8 @@ namespace Klangraum
 
 			// Instructionname
 			//------------------------------------------------------------------------------------------
-			Instruction instruction;
-			instruction = {0, 0, 0, 0, 0, 0, 0};
 			int instructionName = opcodeMap[keyword];
 			instruction.opcode = instructionName;
-			if (DEBUG)
-				cout << "INSTR: " << instruction.opcode << " | ";
 
 			// GPR R
 			//------------------------------------------------------------------------------------------
@@ -592,9 +633,17 @@ namespace Klangraum
 				cout << "Kommentar gefunden" << endl;
 			return true;
 		}
-
-		// Wenn nichts zutrifft
-		return false;
+		else
+		{
+			// Wenn nichts zutrifft
+			if (DEBUG)
+				std::cout << "Ungueltige Syntax" << std::endl;
+			error.errorDescription = errorMap[ERROR_SYNTAX_NOT_VALID];
+			error.errorRow = errorCounter;
+			errorList.push_back(error);
+			return false;
+		}
+		// return true;
 	}
 
 	// Gibt gemappten Registerindex zurück
@@ -684,6 +733,7 @@ namespace Klangraum
 			}
 
 			// Auf das letzte Vektor-Element zugreifen
+			// TODO: Sinnvoll?
 			string lastElement = lines.back();
 			// Wenn kein END Keyword gefunden wird
 			if (lastElement != "end")
@@ -693,7 +743,7 @@ namespace Klangraum
 				errorList.push_back(error);
 				if (DEBUG)
 					cout << "Kein 'END' gefunden" << endl;
-				return false;
+				// return false;
 			}
 
 			if (DEBUG)
@@ -703,13 +753,13 @@ namespace Klangraum
 			int numErrors = errorList.size();
 			if (numErrors > 1)
 			{
-				if (DEBUG)
-					cout << colorMap[COLOR_RED] << "Syntaxfehler gefunden" << colorMap[COLOR_NULL] << endl; // Ausgabe Syntaxfehler mit Zeilennummer, beginnend mit 0
+				// if (DEBUG)
+				cout << colorMap[COLOR_RED] << "Syntaxfehler gefunden" << colorMap[COLOR_NULL] << endl; // Ausgabe Syntaxfehler mit Zeilennummer, beginnend mit 0
 
 				for (int i = 1; i < numErrors; i++)
 				{
-					if (DEBUG)
-						cout << errorList[i].errorDescription << " (" << errorList[i].errorRow << ")" << endl;
+					// if (DEBUG)
+					cout << errorList[i].errorDescription << " (" << errorList[i].errorRow << ")" << endl;
 				}
 				if (DEBUG)
 					printLine(80);
@@ -807,13 +857,17 @@ namespace Klangraum
 		return instructionCounter;
 	}
 
-	std::array<float, 2> FX8010::process(const std::array<float, 2> &inputSamples)
+	std::vector<float> FX8010::process(const std::vector<float> &inputSamples)
 	{
 		{
+			// Endflag fuer einen Samplezyklus. Wird mit END im Sourcecode gesetzt.
 			bool isEND = false;
-			std::array<float, 2> outputSamples;
-			//  Verarbeite die inputSamples und erstelle das Ergebnis als vector<float>
+			// Initialisiere Outputbuffer
+			std::vector<float> outputSamples;
+			outputSamples.resize(numChannels);
+			// Skip n Instructions
 			int numSkip = 0;
+
 			// Durchlaufen der Instruktionen und Ausfuehren des Emulators
 			do
 			{

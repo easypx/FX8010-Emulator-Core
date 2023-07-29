@@ -7,23 +7,18 @@
 
 int main()
 {
+
+    int numChannels = 2;
     // Create an instance of FX8010 class
-    Klangraum::FX8010 *fx8010 = new Klangraum::FX8010();
+    Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
 
     // Vector mit Testsamples erzeugen
     int numSamples = AUDIOBLOCKSIZE;
-    int numChannels = 1;
 
     // Vector mit linearen Sampledaten. Nur zum Testen!
     std::vector<float> testSample;
 
-
-
-    // Initialisiere testSample für jeden Kanal
-    // testSample.resize(numChannels);
-
     // Channel 0: 0 bis 1.0
-    // Channel 1: 0 bis 0.5
     for (int i = 0; i < numSamples; i++)
     {
         float value = static_cast<float>(i) / (numSamples - 1); // Wertebereich von 0 bis 1.0
@@ -46,12 +41,15 @@ int main()
 
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
-        std::array<float, 2> inputBuffer;
-        std::array<float, 2> outputBuffer;
+        std::vector<float> inputBuffer;
+        inputBuffer.resize(numChannels);
+        std::vector<float> outputBuffer;
+        outputBuffer.resize(numChannels);
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
-            inputBuffer[0] = testSample[i]; // l
-            inputBuffer[1] = testSample[i]; // r
+            // Nutze dasselbe testSample als Stereoinput
+            inputBuffer[0] = testSample[i]; // left
+            inputBuffer[1] = testSample[i]; // right
             outputBuffer = fx8010->process(inputBuffer);
             cout << "Output (links): " << outputBuffer[0] << endl;
             cout << "Output (rechts): " << outputBuffer[1] << endl;

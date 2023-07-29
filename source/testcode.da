@@ -1,5 +1,6 @@
 ; Deklarationen
 static a ; Kommentar
+static b
 TEMP c = 1.0
 itramsize 1000
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
@@ -9,11 +10,15 @@ output out_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links,
 output out_r = 1
 static rd
 static wr
+;static wr
 
 ; Instruktionen
+LOG a, in_l, 7, 0
+MAC out_l, 0, a, 1.0
+LOG a, in_r, 7, 0
+MAC out_r, 0, a, 1.0
+
 ;INTERP c, -0.25, in, 0.25 ; ok
-MAC out_l, 0, in_l, 1.0 ; ok
-MAC out_r, 0, in_r, 0.5 ; ok
 ;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
 ;;MAC a, 0, in, volume ; ok
 ;MACINT a, 0, a, 2.0 ; ok
