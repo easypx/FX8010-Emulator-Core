@@ -16,8 +16,8 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 
 Usage:  
 - For console debug output change DEBUG and PRINT_REGISTERS defines in fx8010.h
-- Not all instructions are working, use Mono (numChannels = 1) for now
-- Sourcecode syntax is same as DANE (KX-Project, 2. Link below)
+- Not all instructions are tested, but should not crash
+- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions
 
 [3rd Party Docs/FX8010 - A DSP Chip Architecture for Audio Effects (1998).pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf)
 
