@@ -14,6 +14,7 @@
 #include <sstream>
 #include <regex>
 #include <map>
+#include <array>
 
 using namespace std;
 
@@ -29,7 +30,7 @@ using namespace std;
 #define SAMPLERATE 48000  // originale Samplerate des DSP
 #define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop vom VST-Plugin bereitgestellt.
 #define DEBUG 1         // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 1 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
 {
@@ -42,7 +43,8 @@ namespace Klangraum
         // Method to initialize lookup tables and other initialization tasks
         void initialize();
         // Der eigentliche Prozess-Loop
-        float process(const float inputSample);
+        std::array<float, 2> process(const std::array<float, 2>& inputSamples);
+        float outputSamples[2] = {0, 0};
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
         // Textfile in 2D Vector einladen

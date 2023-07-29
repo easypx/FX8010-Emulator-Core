@@ -356,7 +356,20 @@ namespace Klangraum
 				reg.registerName = registerName;
 				if (!registerValue.empty())
 				{
-					reg.registerValue = stof(registerValue);
+					// Wenn Input oder Output Variable, dann uebernehme Value als IOIndex
+					// NOTE: Hier gibt es einen Unterschied zu KX-Driver! Dieser hat keine Definition fuer
+					// IOIndex. Die In-und Outputs werden inkrementell erzeugt und können beliebig verknüpft werden.
+					// In diesem Emulator wird nur Stereo Processing gemacht, d.h. wir müssen bei der Definition 
+					// IOindizes angeben.
+					// TODO(Klangraum): Evtl. spaeter andere Syntax z.B input in, 0?
+					if (registerTyp == "input" || registerTyp == "output")
+					{
+						reg.IOIndex = stoi(registerValue);
+					}
+					else
+					{
+						reg.registerValue = stof(registerValue);
+					}
 				}
 				else
 				{
@@ -794,188 +807,191 @@ namespace Klangraum
 		return instructionCounter;
 	}
 
-	float FX8010::process(const float inputBuffer)
+	std::array<float, 2> FX8010::process(const std::array<float, 2> &inputSamples)
 	{
-		bool isEND = false;
-		float outputSample = 0;
-		int numSkip = 0;
-		// Durchlaufen der Instruktionen und Ausfuehren des Emulators
-		do
 		{
-			for (auto &instruction : instructions)
+			bool isEND = false;
+			std::array<float, 2> outputSamples;
+			//  Verarbeite die inputSamples und erstelle das Ergebnis als vector<float>
+			int numSkip = 0;
+			// Durchlaufen der Instruktionen und Ausfuehren des Emulators
+			do
 			{
-				if (numSkip == 0)
+				for (auto &instruction : instructions)
 				{
-					// Zugriff auf die Operanden und Registerinformationen
-					const int opcode = instruction.opcode; // read only
-					int operand1Index = instruction.operand1;
-					int operand2Index = instruction.operand2;
-					int operand3Index = instruction.operand3;
-					int operand4Index = instruction.operand4;
-
-					// Zugriff auf die GPR und deren Daten
-					GPR &R = registers[operand1Index]; // read/write
-					GPR &A = registers[operand2Index]; // read/write
-					GPR &X = registers[operand3Index]; // read/write
-					GPR &Y = registers[operand4Index]; // read/write
-
-					// Hier koennen Sie die Instruktionen ausfuehren, basierend auf den Registern und Opcodes
-					// TODO: Stereo Inputs?
-					// if (instruction.hasCCR)
-
-					if (instruction.hasInput)
+					if (numSkip == 0)
 					{
-						if (A.registerType == INPUT)
-							A.registerValue = inputBuffer; // Sample Input, TODO: inputSample[A.IOIndex], Input Buffer as Vector with numChannels?
-						if (X.registerType == INPUT)
-							X.registerValue = inputBuffer;
-						if (Y.registerType == INPUT)
-							Y.registerValue = inputBuffer;
-					}
+						// Zugriff auf die Operanden und Registerinformationen
+						const int opcode = instruction.opcode; // read only
+						int operand1Index = instruction.operand1;
+						int operand2Index = instruction.operand2;
+						int operand3Index = instruction.operand3;
+						int operand4Index = instruction.operand4;
 
-					switch (opcode)
-					{
-					case MAC:
-						// R = A + X * Y
-						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
-						accumulator = R.registerValue; // Copy unsaturated value into accumulator
-						// Saturation
-						R.registerValue = saturate(R.registerValue, 1.0);
-						// Set CCR register based on R
-						setCCR(R.registerValue);
-						break;
-					case MACINT:
-						// R = A + X * Y
-						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
-						accumulator = R.registerValue; // Copy unsaturated value into accumulator
-						// Saturation
-						R.registerValue = saturate(R.registerValue, 1.0);
-						// Set CCR register based on R
-						setCCR(R.registerValue);
-						break;
-					case ACC3:
-						// R = A + X + Y
-						R.registerValue = A.registerValue + X.registerValue + Y.registerValue;
-						accumulator = R.registerValue; // Copy unsaturated value into accumulator
-						// Saturation
-						R.registerValue = saturate(R.registerValue, 1.0);
-						// Set CCR register based on R
-						setCCR(R.registerValue);
-						break;
-					case LOG:
-						// TODO: Y = sign
-						R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[static_cast<int>(X.registerValue)], -1.0, 1.0);
-						accumulator = R.registerValue;
-						break;
-					case EXP:
-						R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
-						accumulator = R.registerValue;
-						break;
-					case MACW:
-						R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
-						accumulator = R.registerValue;
-						break;
-					case MACINTW:
-						R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
-						accumulator = R.registerValue;
-						break;
-					case MACMV:
-						accumulator = accumulator + X.registerValue * Y.registerValue;
-						R.registerValue = A.registerValue;
-						break;
-					case ANDXOR:
-						R.registerValue = logicOps(A, X, Y);
-						break;
-					case TSTNEG:
-						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : -X.registerValue; // TODO: Check
-						accumulator = R.registerValue;
-						break;
-					case LIMIT:
-						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
-						accumulator = R.registerValue;
-						break;
-					case LIMITN:
-						R.registerValue = A.registerValue < Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
-						accumulator = R.registerValue;
-						break;
-					case SKIP:
-						// Wenn X = CCR, dann überspringe Y Instructions.
-						if (static_cast<int>(X.registerValue) == registers[0].registerValue)
-							numSkip = static_cast<int>(Y.registerValue);
-						break;
-					case INTERP:
-						R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
-						accumulator = R.registerValue;
-						break;
-					case IDELAY:
-						if (R.registerType == READ)
+						// Zugriff auf die GPR und deren Daten
+						GPR &R = registers[operand1Index]; // read/write
+						GPR &A = registers[operand2Index]; // read/write
+						GPR &X = registers[operand3Index]; // read/write
+						GPR &Y = registers[operand4Index]; // read/write
+
+						// Hier koennen Sie die Instruktionen ausfuehren, basierend auf den Registern und Opcodes
+						// TODO: Stereo Inputs?
+						// if (instruction.hasCCR)
+
+						if (instruction.hasInput)
 						{
-							A.registerValue = readSmallDelay(Y.registerValue); // Y = Adresse, (Y-2048) mit 11 Bit Shift
+							if (A.registerType == INPUT)
+								A.registerValue = inputSamples[A.IOIndex]; // Sample Input, TODO: inputSample[A.IOIndex], Input Buffer as Vector with numChannels?
+							if (X.registerType == INPUT)
+								X.registerValue = inputSamples[A.IOIndex];
+							if (Y.registerType == INPUT)
+								Y.registerValue = inputSamples[A.IOIndex];
 						}
-						else if (R.registerType == WRITE)
-						{
-							writeSmallDelay(A.registerValue); // A = value
-						}
-						break;
-					case XDELAY:
-						if (R.registerType == READ)
-						{
-							A.registerValue = readLargeDelay(Y.registerValue);
-						}
-						else if (R.registerType == WRITE)
-						{
-							writeLargeDelay(A.registerValue);
-						}
-						break;
-					case END:
-						// End of sample cycle
-						isEND = true;
-						break;
-					default:
-						// std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
-						break;
-					}
 
-					instructionCounter++;
-
-					if (PRINT_REGISTERS && !isEND)
-						printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
-
-					// wenn R = OUTPUT Typ, an VST Output zurückgeben
-					if (R.registerType == OUTPUT)
-					{
-						// return R.registerValue; // Beendet process() und ignoriert nachfolgende Instructions. Sinnvoll?
-						//  Schreibe R in den Outputbuffer mit Index (für Mehrkanal)
-						outputBuffer[R.IOIndex] = R.registerValue;
-					}
-
-					// Reset aller TEMP GPR nach einem Samplezyklus
-					if (isEND)
-					{
-						// NOTE: not really needed, performance issue
-						// TODO: Extra Temp-Vector machen für schnelles Löschen?
-						/*for (auto &reg : registers)
+						switch (opcode)
 						{
-							if (reg.registerType == TEMP)
+						case MAC:
+							// R = A + X * Y
+							R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
+							accumulator = R.registerValue; // Copy unsaturated value into accumulator
+							// Saturation
+							R.registerValue = saturate(R.registerValue, 1.0);
+							// Set CCR register based on R
+							setCCR(R.registerValue);
+							break;
+						case MACINT:
+							// R = A + X * Y
+							R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
+							accumulator = R.registerValue; // Copy unsaturated value into accumulator
+							// Saturation
+							R.registerValue = saturate(R.registerValue, 1.0);
+							// Set CCR register based on R
+							setCCR(R.registerValue);
+							break;
+						case ACC3:
+							// R = A + X + Y
+							R.registerValue = A.registerValue + X.registerValue + Y.registerValue;
+							accumulator = R.registerValue; // Copy unsaturated value into accumulator
+							// Saturation
+							R.registerValue = saturate(R.registerValue, 1.0);
+							// Set CCR register based on R
+							setCCR(R.registerValue);
+							break;
+						case LOG:
+							// TODO: Y = sign
+							R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[static_cast<int>(X.registerValue)], -1.0, 1.0);
+							accumulator = R.registerValue;
+							break;
+						case EXP:
+							R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
+							accumulator = R.registerValue;
+							break;
+						case MACW:
+							R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
+							accumulator = R.registerValue;
+							break;
+						case MACINTW:
+							R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
+							accumulator = R.registerValue;
+							break;
+						case MACMV:
+							accumulator = accumulator + X.registerValue * Y.registerValue;
+							R.registerValue = A.registerValue;
+							break;
+						case ANDXOR:
+							R.registerValue = logicOps(A, X, Y);
+							break;
+						case TSTNEG:
+							R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : -X.registerValue; // TODO: Check
+							accumulator = R.registerValue;
+							break;
+						case LIMIT:
+							R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
+							accumulator = R.registerValue;
+							break;
+						case LIMITN:
+							R.registerValue = A.registerValue < Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
+							accumulator = R.registerValue;
+							break;
+						case SKIP:
+							// Wenn X = CCR, dann überspringe Y Instructions.
+							if (static_cast<int>(X.registerValue) == registers[0].registerValue)
+								numSkip = static_cast<int>(Y.registerValue);
+							break;
+						case INTERP:
+							R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
+							accumulator = R.registerValue;
+							break;
+						case IDELAY:
+							if (R.registerType == READ)
 							{
-								reg.registerValue = 0;
+								A.registerValue = readSmallDelay(Y.registerValue); // Y = Adresse, (Y-2048) mit 11 Bit Shift
 							}
-						}*/
-					}
-					// Debug outputs
-					// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
-					// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
-					// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
-				}
-				else
-				{
-					numSkip = (numSkip > 0) ? --numSkip : 0;
-					if (PRINT_REGISTERS)
-						cout << "Skip instruction!" << endl;
-				}
-			}
-		} while (!isEND);
-		return 0;
-	}
+							else if (R.registerType == WRITE)
+							{
+								writeSmallDelay(A.registerValue); // A = value
+							}
+							break;
+						case XDELAY:
+							if (R.registerType == READ)
+							{
+								A.registerValue = readLargeDelay(Y.registerValue);
+							}
+							else if (R.registerType == WRITE)
+							{
+								writeLargeDelay(A.registerValue);
+							}
+							break;
+						case END:
+							// End of sample cycle
+							isEND = true;
+							break;
+						default:
+							// std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
+							break;
+						}
 
+						instructionCounter++;
+
+						if (PRINT_REGISTERS && !isEND)
+							printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
+
+						// wenn R = OUTPUT Typ, an VST Output zurückgeben
+						if (R.registerType == OUTPUT)
+						{
+							// return R.registerValue; // Beendet process() und ignoriert nachfolgende Instructions. Sinnvoll?
+							//  Schreibe R in den Outputbuffer mit Index (für Mehrkanal)
+							outputSamples[R.IOIndex] = R.registerValue;
+						}
+
+						// Reset aller TEMP GPR nach einem Samplezyklus
+						if (isEND)
+						{
+							// NOTE: not really needed, performance issue
+							// TODO: Extra Temp-Vector machen für schnelles Löschen?
+							/*for (auto &reg : registers)
+							{
+								if (reg.registerType == TEMP)
+								{
+									reg.registerValue = 0;
+								}
+							}*/
+							return outputSamples;
+						}
+						// Debug outputs
+						// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
+						// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
+						// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
+					}
+					else
+					{
+						numSkip = (numSkip > 0) ? --numSkip : 0;
+						if (PRINT_REGISTERS)
+							cout << "Skip instruction!" << endl;
+					}
+				}
+			} while (!isEND);
+			// return 0;
+		}
+	}
 } // namespace Klangraum
