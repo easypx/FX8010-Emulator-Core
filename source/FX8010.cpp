@@ -35,10 +35,10 @@ namespace Klangraum
 		errorMap[ERROR_VAR_NOT_DECLARED] = "Variable nicht deklariert";
 		errorMap[ERROR_INPUT_FOR_R_NOT_ALLOWED] = "Verwendung von Input fuer R ist nicht erlaubt";
 		errorMap[ERROR_NO_END_FOUND] = "Kein 'END' gefunden";
-		errorMap[ERROR_IO_INDEX_TOO_LARGE] = "I/O Index zu gross";
+		errorMap[ERROR_IO_INDEX_TO_LARGE] = "I/O Index zu gross";
 		errorMap[ERROR_SYNTAX_NOT_VALID] = "Ungueltige Syntax";
-		errorMap[ERROR_ITRAMSIZE_TO_BIG] = "iTRAM Size ueberschritten (max. 4800)";
-		errorMap[ERROR_XTRAMSIZE_TO_BIG] = "xRAM Size ueberschritten (max. 48000)";
+		errorMap[ERROR_ITRAMSIZE_TO_LARGE] = "iTRAM Size ueberschritten (max. 4800)";
+		errorMap[ERROR_XTRAMSIZE_TO_LARGE] = "xRAM Size ueberschritten (max. 48000)";
 
 		// First error is no error
 		error.errorDescription = errorMap[ERROR_NONE];
@@ -372,7 +372,7 @@ namespace Klangraum
 						// TODO: I/O-Initialisierung im Sourcecode?
 						if (stoi(registerValue) > numChannels - 1)
 						{
-							error.errorDescription = errorMap[ERROR_IO_INDEX_TOO_LARGE];
+							error.errorDescription = errorMap[ERROR_IO_INDEX_TO_LARGE];
 							error.errorRow = errorCounter;
 							errorList.push_back(error);
 							if (DEBUG)
@@ -437,7 +437,7 @@ namespace Klangraum
 				{
 					if (DEBUG)
 						cout << "iTRAMSize zu gross (max. 4800)" << endl;
-					error.errorDescription = errorMap[ERROR_ITRAMSIZE_TO_BIG];
+					error.errorDescription = errorMap[ERROR_ITRAMSIZE_TO_LARGE];
 					error.errorRow = errorCounter;
 					errorList.push_back(error);
 					return false;
@@ -458,7 +458,7 @@ namespace Klangraum
 				{
 					if (DEBUG)
 						cout << "xTRAMSize zu gross (max. 48000)" << endl;
-					error.errorDescription = errorMap[ERROR_XTRAMSIZE_TO_BIG];
+					error.errorDescription = errorMap[ERROR_XTRAMSIZE_TO_LARGE];
 					error.errorRow = errorCounter;
 					errorList.push_back(error);
 					return false;

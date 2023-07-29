@@ -238,10 +238,10 @@ namespace Klangraum
             ERROR_VAR_NOT_DECLARED,
             ERROR_INPUT_FOR_R_NOT_ALLOWED,
             ERROR_NO_END_FOUND,
-            ERROR_IO_INDEX_TOO_LARGE,
+            ERROR_IO_INDEX_TO_LARGE,
             ERROR_SYNTAX_NOT_VALID,
-            ERROR_ITRAMSIZE_TO_BIG,
-            ERROR_XTRAMSIZE_TO_BIG
+            ERROR_ITRAMSIZE_TO_LARGE,
+            ERROR_XTRAMSIZE_TO_LARGE
             // Weitere Fehlercodes hier...
         };
 
