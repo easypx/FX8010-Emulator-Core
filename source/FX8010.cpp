@@ -78,7 +78,7 @@ namespace Klangraum
 
 		// Populate lookupTablesLog with lookup tables for different i values
 		// Tabellen mit (4 Vorzeichen (sign)) und 31 Exponenten je 32 Werte (2x für LOG und EXP)
-		for (int i = 1; i < numExponent; i++)
+		for (int i = 0; i < numExponent; i++)
 		{
 			std::vector<double> lookupTableLog = createLogLookupTable(0, 1.0, numEntries, i);
 			std::vector<double> temp;
@@ -97,7 +97,7 @@ namespace Klangraum
 			lookupTablesLog.push_back(temp);
 
 			std::vector<double> lookupTableExp = createExpLookupTable(0, 1.0, numEntries, i);
-			temp.resize(32); // Initialisierung mit 0
+			temp.resize(32, 0); // Initialisierung mit 0
 			// an Y-Achse spiegeln
 			temp = mirrorYVector(lookupTableExp);
 			// letztes Element, jetzt 0, löschen, um doppelte 0 zu vermeiden
@@ -107,8 +107,8 @@ namespace Klangraum
 			temp = negateVector(temp); // = MirrorX
 			// Verknüpfen Sie die beiden Vektoren
 			temp = concatenateVectors(temp, lookupTableExp);
-			temp.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
-			// Schiebe neuen Vector in die Schar von EXP Vektoren
+			// temp1.shrink_to_fit(); // um sicherzugehen, dass die Vector Size korrekt ist.
+			//  Schiebe neuen Vector in die Schar von EXP Vektoren
 			lookupTablesExp.push_back(temp);
 		}
 
@@ -121,8 +121,8 @@ namespace Klangraum
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
 		if (DEBUG)
 			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
-		//smallDelayBuffer.reserve(MAX_IDELAY_SIZE); // 100ms max. Gesamtgroesse
-		//largeDelayBuffer.reserve(MAX_XDELAY_SIZE); // 1s max. Gesamtgroesse
+		// smallDelayBuffer.reserve(MAX_IDELAY_SIZE); // 100ms max. Gesamtgroesse
+		// largeDelayBuffer.reserve(MAX_XDELAY_SIZE); // 1s max. Gesamtgroesse
 
 		// I/O Buffers initialisieren?
 
@@ -162,7 +162,7 @@ namespace Klangraum
 		{
 			double x = x_min + i * step;
 			// double expValue = exp(x * numEntries - numEntries);
-			double expValue = pow(x, exponent); // see log for explanation
+			double expValue = pow(x, static_cast<float>(exponent)); // see log for explanation
 			lookupTable.push_back(expValue);
 		}
 		return lookupTable;
@@ -501,7 +501,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen und initialisieren
-					//smallDelayBuffer.resize(4800, 0.0);
+					// smallDelayBuffer.resize(4800, 0.0);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
 				}
@@ -521,7 +521,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen
-					//largeDelayBuffer.resize(xTRAMSize, 0.0);
+					// largeDelayBuffer.resize(xTRAMSize, 0.0);
 					if (DEBUG)
 						cout << "xTRAMSize: " << xTRAMSize << endl;
 				}
@@ -874,7 +874,7 @@ namespace Klangraum
 			position_ = iTRAMSize - 1;
 		}
 		smallDelayBuffer[smallDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize;				// Inkrementiere Schreibpointer (Ringbuffer)
+		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
 	inline void FX8010::writeLargeDelay(float sample, int position_)
@@ -889,7 +889,7 @@ namespace Klangraum
 			position_ = xTRAMSize - 1;
 		}
 		largeDelayBuffer[largeDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize;				// Inkrementiere Schreibpointer (Ringbuffer)
+		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
 	// NOT CHECKED
@@ -1040,7 +1040,7 @@ namespace Klangraum
 						accumulator = R.registerValue;
 						break;
 					case EXP:
-						R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
+						R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[static_cast<int>(X.registerValue)], -1.0, 1.0);
 						accumulator = R.registerValue;
 						break;
 					case MACW:
@@ -1127,7 +1127,7 @@ namespace Klangraum
 					}
 
 					// Debug outputs
-					// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
+					// std::cout << inputSamples[A.IOIndex] << " , " << R.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
 					// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
 					// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
 				}
