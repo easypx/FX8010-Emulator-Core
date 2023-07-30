@@ -44,9 +44,9 @@ int main()
 
         // Lege I/O Buffer an
         std::vector<float> inputBuffer;
-        inputBuffer.resize(numChannels);
+        inputBuffer.resize(numChannels, 0.0);
         std::vector<float> outputBuffer;
-        outputBuffer.resize(numChannels);
+        outputBuffer.resize(numChannels, 0.0);
 
         // 4 virtuelle Sliderwerte
         std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
@@ -58,14 +58,18 @@ int main()
         {
             diracImpulse.push_back(0.0);
         }
-        for (int i = 0; i < numSamples; i++)
-        {
-            cout << diracImpulse[i] << endl;
-        }
+
+        // Dirac Impuls ausgeben
+        // for (int i = 0; i < numSamples; i++)
+        // {
+        //     cout << diracImpulse[i] << endl;
+        // }
 
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
 
+        // Vergleich mit Null mit einer kleinen Toleranz
+        double tolerance = 1e-6;
 
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
@@ -73,25 +77,25 @@ int main()
         {
             // Simuliere Sliderinput alle 8 Samples
             //----------------------------------------------------------------
-            //if (i % 8 == 0)
+            // if (i % 8 == 0)
             //{
-                // fx8010->setRegisterValue("volume", sliderValues[i / 8]);
+            // fx8010->setRegisterValue("volume", sliderValues[i / 8]);
             //}
 
             // Nutze dieselben Sampledaten als Stereoinput
             // AC-Testsample
             //----------------------------------------------------------------
-            //for (int j = 0; j < numChannels; j++)
+            // for (int j = 0; j < numChannels; j++)
             //{
-                //inputBuffer[j] = ramp[i]; // AC-Testsample
+            // inputBuffer[j] = ramp[i]; // AC-Testsample
             //}
 
             // DC-Testvalue
             //----------------------------------------------------------------
-            //for (int j = 0; j < numChannels; j++)
-            //{
-                //inputBuffer[j] = 1.0; // DC-Testvalue
-            //}
+            // for (int j = 0; j < numChannels; j++)
+            // {
+            // inputBuffer[j] = 1.0; // DC-Testvalue
+            // }
 
             // Dirac Impuls
             //----------------------------------------------------------------
@@ -107,8 +111,10 @@ int main()
             // NOTE: Anzeige beeinflusst Zeitmessung stark!
             if (DEBUG)
             {
-                cout << "Output (0): " << outputBuffer[0] << endl;
-                cout << "Output (1): " << outputBuffer[1] << endl;
+                cout << "Sample: " << std::setw(3) << i << " | " << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
+                cout << "Output (0): " << std::setw(12) << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                //cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";                
+                //cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
             }
         }
 

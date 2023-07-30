@@ -123,8 +123,6 @@ namespace Klangraum
 			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
 		smallDelayBuffer.reserve(smallDelaySize); // 100ms max. Gesamtgroesse
 		largeDelayBuffer.reserve(largeDelaySize); // 1s max. Gesamtgroesse
-		smallDelayReadPos = iTRAMSize - 1;		  // Default Leseposition (letztes Element)
-		largeDelayReadPos = xTRAMSize - 1;		  // Default Leseposition (letztes Element)
 
 		// I/O Buffers initialisieren?
 
@@ -271,7 +269,7 @@ namespace Klangraum
 	inline float FX8010::saturate(const float input, const float threshold)
 	{
 		// Ternäre Schreibweise
-		return (input > threshold) ? threshold : ((input < -threshold) ? -threshold : input);
+		return (input >= threshold) ? threshold : ((input <= -threshold) ? -threshold : input);
 	}
 
 	// CHECKED
@@ -876,7 +874,7 @@ namespace Klangraum
 			position_ = iTRAMSize - 1;
 		}
 		smallDelayBuffer[smallDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
+		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize;				// Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
 	inline void FX8010::writeLargeDelay(float sample, int position_)
@@ -891,7 +889,7 @@ namespace Klangraum
 			position_ = xTRAMSize - 1;
 		}
 		largeDelayBuffer[largeDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
+		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize;				// Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
 	// NOT CHECKED
@@ -906,36 +904,36 @@ namespace Klangraum
 		// Wenn position_ > 1 müssen wir Lesepointer zurückstellen!
 
 		// Range-Check
-		if (position_ < 1)
+		if (position_ < 0)
 		{
-			position_ = 1; // position_ muss mind. 1 sein!
+			position_ = 0; // position_ muss mind. 1 sein!
 		}
-		else if (position_ > iTRAMSize - 1)
+		else if (position_ > (iTRAMSize - 1))
 		{
 			position_ = iTRAMSize - 1; // position_ muss kleiner iTRAMSize sein!
 		}
 		// smallDelayReadPos wird mit (iTRAMSize-1) initialisiert, welches das letzte Element ist!
 		// Mit (position_ - 1) stellen wir den Lesepointer zurück
-		float out = smallDelayBuffer[smallDelayReadPos - (position_ - 1)]; // Lese Sample aus Delayline
-		smallDelayReadPos = smallDelayReadPos + 1 % iTRAMSize;			   // Inkrementiere Lesepointer (Ringbuffer)
+		float out = smallDelayBuffer[(smallDelayReadPos - position_) % iTRAMSize]; // Lese Sample aus Delayline
+		smallDelayReadPos = (smallDelayReadPos + 1) % iTRAMSize;				   // Inkrementiere Lesepointer (Ringbuffer)
 		return out;
 	}
 
 	inline float FX8010::readLargeDelay(int position_)
 	{
 		// Range-Check
-		if (position_ < 1)
+		if (position_ < 0)
 		{
-			position_ = 1; // position_ muss mind. 1 sein!
+			position_ = 0; // position_ muss mind. 1 sein!
 		}
-		else if (position_ > xTRAMSize - 1)
+		else if (position_ > (xTRAMSize - 1))
 		{
 			position_ = xTRAMSize - 1; // position_ muss kleiner xTRAMSize sein!
 		}
 		// largeDelayReadPos wird mit (xTRAMSize-1) initialisiert, welches das letzte Element ist!
 		// Mit (position_ - 1) stellen wir den Lesepointer zurück
-		float out = largeDelayBuffer[largeDelayReadPos - (position_ - 1)]; // Lese Sample aus Delayline
-		largeDelayReadPos = largeDelayReadPos + 1 % xTRAMSize;			   // Inkrementiere Lesepointer (Ringbuffer)
+		float out = largeDelayBuffer[(largeDelayReadPos - position_) % xTRAMSize]; // Lese Sample aus Delayline
+		largeDelayReadPos = (largeDelayReadPos + 1) % xTRAMSize;				   // Inkrementiere Lesepointer (Ringbuffer)
 		return out;
 	}
 
@@ -944,13 +942,16 @@ namespace Klangraum
 	{
 		int columnWidth = 12; // Spaltenbreite
 
+		// Vergleich mit Null mit einer kleinen Toleranz
+		double tolerance = 1e-6;
+
 		// Zeile ausgeben
 		std::cout << "INSTR" << std::setw(columnWidth / 2) << instruction << " | ";
-		std::cout << "R" << std::setw(columnWidth) << value1 << " | ";
-		std::cout << "A" << std::setw(columnWidth) << value2 << " | ";
-		std::cout << "X" << std::setw(columnWidth) << value3 << " | ";
-		std::cout << "Y" << std::setw(columnWidth) << value4 << " | ";
-		std::cout << "ACCU" << std::setw(columnWidth) << accumulator << std::endl;
+		std::cout << "R" << std::setw(columnWidth) << ((std::abs(value1) < tolerance) ? 0.0 : value1) << " | ";
+		std::cout << "A" << std::setw(columnWidth) << ((std::abs(value2) < tolerance) ? 0.0 : value2) << " | ";
+		std::cout << "X" << std::setw(columnWidth) << ((std::abs(value3) < tolerance) ? 0.0 : value3) << " | ";
+		std::cout << "Y" << std::setw(columnWidth) << ((std::abs(value4) < tolerance) ? 0.0 : value4) << " | ";
+		std::cout << "ACCU" << std::setw(columnWidth) << ((std::abs(accumulator) < tolerance) ? 0.0 : accumulator) << std::endl;
 	}
 
 	int FX8010::getInstructionCounter()

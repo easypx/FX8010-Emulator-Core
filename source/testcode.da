@@ -6,7 +6,7 @@ itramsize 10
 xtramsize 10
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 ;input in_r = 1
-control volume = 1.0
+control volume = 0.5
 control pan = 0.5
 control filter = 0
 output out_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
@@ -21,10 +21,11 @@ static wr
 ;LOG a, in_r, 7, 0
 ;MAC out_r, 0, in_r, volume
 
-; Delayline
-xdelay write, in_l, at, 0
-xdelay read, rd, at, 9; max. read index (xtramsize-1) !
-MAC out_l, 0, rd, volume
+; Delayline mit Feedback
+mac a, in_l, rd, 0.1
+idelay write, a, at, 0
+idelay read, rd, at, 9; max. read index (tramsize-1) !
+MAC out_l, in_l, rd, 0.5
 
 ;INTERP a, -0.25, filter, 0.25 ; ok
 ;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
