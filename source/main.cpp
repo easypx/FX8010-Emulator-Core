@@ -3,7 +3,12 @@
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
 
-// using namespace Klangraum;
+using namespace Klangraum;
+
+#define RAMP_TEST 0
+#define DC_TEST 0
+#define DIRAC_TEST 1
+#define SLIDER_TEST 0
 
 int main()
 {
@@ -13,25 +18,7 @@ int main()
     // Create an instance of FX8010 class
     Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
 
-    // Vector mit Ramp erzeugen
-    int numSamples = AUDIOBLOCKSIZE;
-
-    // Vector mit linearen Sampledaten. Nur zum Testen!
-    std::vector<float> ramp;
-
-    // linearen Sampledaten 0 bis 1.0 bzw. -1.0 bis 1.0
-    for (int i = 0; i < numSamples; i++)
-    {
-        float value = static_cast<float>(i) / (numSamples - 1); // Wertebereich von 0 bis 1.0
-        ramp.push_back(value);
-    }
-
-    // Ausgabe des Testsamples
-    // for (int i = 0; i < numSamples; i++)
-    //{
-    //    cout << ramp[i] << endl;
-    //}
-
+    // Sourcecode laden und parsen
     if (fx8010->loadFile("testcode.da"))
     {
         // Diese Liste mit Controlregistern wird VST als Label-Identifizierer fuer Slider, Knobs, usw. nutzen koennen.
@@ -42,6 +29,42 @@ int main()
             cout << element << endl;
         }
 
+        // Vector mit Ramp erzeugen
+        std::vector<float> ramp;
+
+        // linearen Sampledaten 0 bis 1.0 bzw. -1.0 bis 1.0
+        for (int i = 0; i < AUDIOBLOCKSIZE; i++)
+        {
+            float value = static_cast<float>(i) / (AUDIOBLOCKSIZE - 1); // Wertebereich von 0 bis 1.0
+            ramp.push_back(value);
+        }
+
+        // Ausgabe des Testsamples
+        // for (int i = 0; i < AUDIOBLOCKSIZE; i++)
+        // {
+        //     cout << ramp[i] << ", ";
+        // }
+        // cout << endl;
+
+        // Dirac Impuls zum Testen der Delayline
+        // std::vector<float> diracImpulse;
+        // diracImpulse.resize(numSamples, 0);
+        // float diracImpulse[numSamples];
+        float diracImpulse[AUDIOBLOCKSIZE];
+        diracImpulse[0] = 1.0f; // 1. Element ist Dirac-Impuls
+
+        for (int i = 1; i < AUDIOBLOCKSIZE; i++)
+        {
+            diracImpulse[i] = 0.0f;
+        }
+
+        // Dirac Impuls ausgeben
+        // for (int i = 0; i < AUDIOBLOCKSIZE; i++)
+        // {
+        //     cout << diracImpulse[i] << ", ";
+        // }
+        // cout << endl;
+
         // Lege I/O Buffer an
         std::vector<float> inputBuffer;
         inputBuffer.resize(numChannels, 0.0);
@@ -51,25 +74,11 @@ int main()
         // 4 virtuelle Sliderwerte
         std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
 
-        // Dirac Impuls zum Testen der Delayline
-        std::vector<float> diracImpulse;
-        diracImpulse.push_back(1.0);
-        for (int i = 1; i < numSamples; i++)
-        {
-            diracImpulse.push_back(0.0);
-        }
-
-        // Dirac Impuls ausgeben
-        // for (int i = 0; i < numSamples; i++)
-        // {
-        //     cout << diracImpulse[i] << endl;
-        // }
+        // Vergleich mit Null mit einer kleinen Toleranz
+        double tolerance = 1e-6;
 
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
-
-        // Vergleich mit Null mit einer kleinen Toleranz
-        double tolerance = 1e-6;
 
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
@@ -77,31 +86,47 @@ int main()
         {
             // Simuliere Sliderinput alle 8 Samples
             //----------------------------------------------------------------
-            // if (i % 8 == 0)
-            //{
-            // fx8010->setRegisterValue("volume", sliderValues[i / 8]);
-            //}
+            if (SLIDER_TEST)
+            {
+
+                if (i % 8 == 0)
+                {
+                    fx8010->setRegisterValue("volume", sliderValues[i / 8]);
+                }
+            }
 
             // Nutze dieselben Sampledaten als Stereoinput
             // AC-Testsample
             //----------------------------------------------------------------
-            // for (int j = 0; j < numChannels; j++)
-            //{
-            // inputBuffer[j] = ramp[i]; // AC-Testsample
-            //}
+            if (RAMP_TEST)
+            {
+
+                for (int j = 0; j < numChannels; j++)
+                {
+                    inputBuffer[j] = ramp[i]; // AC-Testsample
+                }
+            }
 
             // DC-Testvalue
             //----------------------------------------------------------------
-            // for (int j = 0; j < numChannels; j++)
-            // {
-            // inputBuffer[j] = 1.0; // DC-Testvalue
-            // }
-
-            // Dirac Impuls
-            //----------------------------------------------------------------
-            for (int j = 0; j < numChannels; j++)
+            if (DC_TEST)
             {
-                inputBuffer[j] = diracImpulse[i]; // Dirac Impuls
+
+                for (int j = 0; j < numChannels; j++)
+                {
+                    inputBuffer[j] = 1.0; // DC-Testvalue
+                }
+            }
+
+            // Dirac-Impuls
+            //----------------------------------------------------------------
+            if (DIRAC_TEST)
+            {
+
+                for (int j = 0; j < numChannels; j++)
+                {
+                    inputBuffer[j] = diracImpulse[i]; // Dirac Impuls
+                }
             }
 
             // Hier erfolgt die Berechung
@@ -111,10 +136,11 @@ int main()
             // NOTE: Anzeige beeinflusst Zeitmessung stark!
             if (DEBUG)
             {
-                cout << "Sample: " << std::setw(3) << i << " | " << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
+                cout << "Sample: " << std::setw(3) << i << " | "
+                     << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
                 cout << "Output (0): " << std::setw(12) << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
-                //cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";                
-                //cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
+                // cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";
+                // cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
             }
         }
 
@@ -153,5 +179,7 @@ int main()
             cout << element.errorDescription << " (" << element.errorRow << ")" << endl;
         }
     }
+cleanUp:
+    delete fx8010;
     return 0;
 }

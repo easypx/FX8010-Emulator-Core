@@ -147,10 +147,10 @@ namespace Klangraum
         // GPR - General Purpose Register
         struct GPR
         {
-            int registerType;         // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
-            std::string registerName; // Name des Registers
-            float registerValue;      // Wert des Registers
-            int IOIndex = 0;          // 0 - Links, 1 - Rechts
+            int registerType = 0;          // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
+            std::string registerName = ""; // Name des Registers
+            float registerValue = 0;       // Wert des Registers
+            int IOIndex = 0;               // 0 - Links, 1 - Rechts
         };
 
         // Vector, der die GPR enthaelt
@@ -159,14 +159,14 @@ namespace Klangraum
         // Struct, die eine Instruktion repraesentiert
         struct Instruction
         {
-            int opcode;    // Opcode-Nummer
-            int operand1;  // R (Index des GPR in Vektor "registers")
-            int operand2;  // A (Index des GPR in Vektor "registers")
-            int operand3;  // X (Index des GPR in Vektor "registers")
-            int operand4;  // Y (Index des GPR in Vektor "registers")
-            bool hasInput; // um nicht alle Instructions auf INPUT testen zu muessen
+            int opcode = 0;        // Opcode-Nummer
+            int operand1 = 0;      // R (Index des GPR in Vektor "registers")
+            int operand2 = 0;      // A (Index des GPR in Vektor "registers")
+            int operand3 = 0;      // X (Index des GPR in Vektor "registers")
+            int operand4 = 0;      // Y (Index des GPR in Vektor "registers")
+            bool hasInput = false; // um nicht alle Instructions auf INPUT testen zu muessen
             // hasOutput nicht sinnvoll, Doppelcheck (Instruktion und R)
-            bool hasOutput; // um nicht alle Instructions auf OUTPUT testen zu muessen
+            bool hasOutput = false; // um nicht alle Instructions auf OUTPUT testen zu muessen
         };
 
         // Vector, der die Instruktionen enthaelt
@@ -192,8 +192,8 @@ namespace Klangraum
 
         int smallDelayWritePos = 0;
         int largeDelayWritePos = 0;
-        int smallDelayReadPos = 0; 
-		int largeDelayReadPos = 0; 
+        int smallDelayReadPos = 0;
+        int largeDelayReadPos = 0;
 
         // CCR Register
         inline void setCCR(const float result);

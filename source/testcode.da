@@ -2,8 +2,8 @@
 static a ; Kommentar
 static b
 TEMP c = 0.77
-itramsize 10
-xtramsize 10
+itramsize 100
+xtramsize 1000
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 ;input in_r = 1
 control volume = 0.5
@@ -24,7 +24,7 @@ static wr
 ; Delayline mit Feedback
 mac a, in_l, rd, 0.1
 idelay write, a, at, 0
-idelay read, rd, at, 9; max. read index (tramsize-1) !
+idelay read, rd, at, 3; max. read index (tramsize-1) !
 MAC out_l, in_l, rd, 0.5
 
 ;INTERP a, -0.25, filter, 0.25 ; ok

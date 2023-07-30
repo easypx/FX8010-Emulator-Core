@@ -362,7 +362,7 @@ namespace Klangraum
 		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)$)");
 
 		// check instructions TODO: all instructions
-		std::regex pattern4(R"(^\s*(mac|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*,\s*([a-zA-Z0-9_.-]+)\s*$)");
+		std::regex pattern4(R"(^\s*(mac|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*$)");
 
 		// check metadata TODO: ...
 		std::regex pattern5(R"(^\s*(comment|name|guid)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.]+)\s*$)");
@@ -501,7 +501,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen und initialisieren
-					smallDelayBuffer.resize(iTRAMSize, 0.0);
+					//smallDelayBuffer.resize(iTRAMSize, 0.0);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
 				}
@@ -1012,7 +1012,7 @@ namespace Klangraum
 						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
 						accumulator = R.registerValue; // Copy unsaturated value into accumulator
 						// Saturation
-						R.registerValue = saturate(R.registerValue, 1.0);
+						R.registerValue = saturate(R.registerValue, 1.0f);
 						// Set CCR register based on R
 						setCCR(R.registerValue);
 						break;
