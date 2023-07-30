@@ -121,8 +121,8 @@ namespace Klangraum
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
 		if (DEBUG)
 			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
-		smallDelayBuffer.reserve(smallDelaySize); // 100ms max. Gesamtgroesse
-		largeDelayBuffer.reserve(largeDelaySize); // 1s max. Gesamtgroesse
+		//smallDelayBuffer.reserve(MAX_IDELAY_SIZE); // 100ms max. Gesamtgroesse
+		//largeDelayBuffer.reserve(MAX_XDELAY_SIZE); // 1s max. Gesamtgroesse
 
 		// I/O Buffers initialisieren?
 
@@ -501,7 +501,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen und initialisieren
-					//smallDelayBuffer.resize(iTRAMSize, 0.0);
+					//smallDelayBuffer.resize(4800, 0.0);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
 				}
@@ -521,7 +521,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen
-					largeDelayBuffer.resize(xTRAMSize, 0.0);
+					//largeDelayBuffer.resize(xTRAMSize, 0.0);
 					if (DEBUG)
 						cout << "xTRAMSize: " << xTRAMSize << endl;
 				}

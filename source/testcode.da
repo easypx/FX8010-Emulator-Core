@@ -24,7 +24,7 @@ static wr
 ; Delayline mit Feedback
 mac a, in_l, rd, 0.1
 idelay write, a, at, 0
-idelay read, rd, at, 3; max. read index (tramsize-1) !
+idelay read, rd, at, 20; max. read index (tramsize-1) !
 MAC out_l, in_l, rd, 0.5
 
 ;INTERP a, -0.25, filter, 0.25 ; ok

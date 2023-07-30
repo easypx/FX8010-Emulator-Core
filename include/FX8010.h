@@ -31,6 +31,8 @@ using namespace std;
 #define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
 #define DEBUG 1           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
 #define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define MAX_IDELAY_SIZE 4800 // 100ms max. Gesamtgroesse
+#define MAX_XDELAY_SIZE 48000 // 1000ms max. Gesamtgroesse
 
 namespace Klangraum
 {
@@ -45,14 +47,14 @@ namespace Klangraum
         void initialize();
         // Der eigentliche Prozess-Loop
         std::vector<float> process(const std::vector<float> &inputSamples);
-        float outputSamples[2] = {0, 0};
+        
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
         // Sourcecode laden
         bool loadFile(const string &path);
         struct MyError // Vorwärtsdeklaration notwendig!
         {
-            std::string errorDescription;
+            std::string errorDescription = "";
             int errorRow = 1;
         };
         std::vector<FX8010::MyError> getErrorList();
@@ -177,19 +179,19 @@ namespace Klangraum
         vector<vector<double>> lookupTablesExp;
 
         // TRAM Engine
-        //------------
-        // Maximale Delayline Groessen
-        int smallDelaySize = 4800;  // 100ms delay at 48kHz
-        int largeDelaySize = 48000; // 1s delay at 48kHz
+        //----------------------------------------------------------------
 
         // Angeforderte Delayline Groesse
         int iTRAMSize = 0;
         int xTRAMSize = 0;
 
         // Create a circular buffer for each delay line. You can use a std::vector to represent the buffer.
-        std::vector<float> smallDelayBuffer;
-        std::vector<float> largeDelayBuffer;
+        // std::vector<float> smallDelayBuffer; // ATTENTION: Vektoren scheinen Probleme mit zufaelligen Werten zu machen!
+        // std::vector<float> largeDelayBuffer; // ATTENTION: Vektoren scheinen Probleme mit zufaelligen Werten zu machen!
+        float smallDelayBuffer[MAX_IDELAY_SIZE];
+        float largeDelayBuffer[MAX_XDELAY_SIZE];
 
+        // Schreib-/Lesepointer
         int smallDelayWritePos = 0;
         int largeDelayWritePos = 0;
         int smallDelayReadPos = 0;
@@ -263,6 +265,8 @@ namespace Klangraum
         int numChannels;
 
         vector<string> controlRegisters;
+
+        float outputSamples[2] = {0};
     };
 
 } // namespace Klangraum
