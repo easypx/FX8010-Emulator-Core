@@ -2,32 +2,38 @@
 static a ; Kommentar
 static b
 TEMP c = 0.77
-itramsize 1000
-xtramsize 10000
+itramsize 10
+xtramsize 10
 input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
-input in_r = 1
-control volume = 0.5 
+;input in_r = 1
+control volume = 1.0
 control pan = 0.5
+control filter = 0
 output out_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
-output out_r = 1
+;output out_r = 1
 static rd
 static wr
 ;static wr
 
-; Instruktionen
+; Amp
 ;LOG a, in_l, 7, 0
-MAC out_l, 0, in_l, volume
+;MAC out_l, 0, in_l, volume
 ;LOG a, in_r, 7, 0
-MAC out_r, 0, in_r, volume
+;MAC out_r, 0, in_r, volume
 
-INTERP a, -0.25, in_l, 0.25 ; ok
-SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
-MAC a, 0, in_l, volume ; ok
-MACINT a, 0, a, 2.0 ; ok
-andxor a, 1, 1, 0 ; ok
-idelay write, in_l, at, 0 
-idelay read, rd, at, 1000
-ACC3 a, a, 0, 1 ; ok
-LOG a, in_l, 7, 0
-EXP a, in_l, 3, 0
+; Delayline
+xdelay write, in_l, at, 0
+xdelay read, rd, at, 9; max. read index (xtramsize-1) !
+MAC out_l, 0, rd, volume
+
+;INTERP a, -0.25, filter, 0.25 ; ok
+;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich > 0 x < 1.0, ok
+;MAC a, 0, in_l, volume ; ok
+;MACINT a, 0, a, 2.0 ; ok
+;;andxor a, 1, 1, 0 ; ok
+;idelay write, in_l, at, 0 
+;idelay read, rd, at, 1000
+;ACC3 a, a, 0, 1 ; ok
+;LOG a, in_l, 7, 0
+;EXP a, in_l, 3, 0
 end

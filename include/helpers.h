@@ -10,7 +10,7 @@
 
 namespace Klangraum
 {
-
+    
     // TODO: Helper-Klasse, Kapselung verhindert Doppeldefinitionen
 
     // Funktion zum Entfernen führender und nachfolgender Leerzeichen

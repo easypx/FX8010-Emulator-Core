@@ -30,10 +30,11 @@ using namespace std;
 #define SAMPLERATE 48000  // originale Samplerate des DSP
 #define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
 #define DEBUG 0           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define PRINT_REGISTERS 1 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
 
 namespace Klangraum
 {
+
     class FX8010
     {
     public:
@@ -158,13 +159,14 @@ namespace Klangraum
         // Struct, die eine Instruktion repraesentiert
         struct Instruction
         {
-            int opcode;     // Opcode-Nummer
-            int operand1;   // Erster Operand (Index des Registers im vector)
-            int operand2;   // Zweiter Operand (Index des Registers im vector)
-            int operand3;   // Dritter Operand (Index des Registers im vector)
-            int operand4;   // Vierter Operand (Index des Registers im vector)
-            bool hasInput;  // um nicht alle Instructions auf INPUT testen zu muessen
-            bool hasOutput; // um nicht alle Instructions auf OUTPUT testen zu muessen (sowieso nicht sinnvoll)
+            int opcode;    // Opcode-Nummer
+            int operand1;  // R (Index des GPR in Vektor "registers")
+            int operand2;  // A (Index des GPR in Vektor "registers")
+            int operand3;  // X (Index des GPR in Vektor "registers")
+            int operand4;  // Y (Index des GPR in Vektor "registers")
+            bool hasInput; // um nicht alle Instructions auf INPUT testen zu muessen
+            // hasOutput nicht sinnvoll, Doppelcheck (Instruktion und R)
+            bool hasOutput; // um nicht alle Instructions auf OUTPUT testen zu muessen
         };
 
         // Vector, der die Instruktionen enthaelt
@@ -176,6 +178,9 @@ namespace Klangraum
 
         // TRAM Engine
         //------------
+        // Maximale Delayline Groessen
+        int smallDelaySize = 4800;  // 100ms delay at 48kHz
+        int largeDelaySize = 48000; // 1s delay at 48kHz
 
         // Angeforderte Delayline Groesse
         int iTRAMSize = 0;
@@ -185,14 +190,10 @@ namespace Klangraum
         std::vector<float> smallDelayBuffer;
         std::vector<float> largeDelayBuffer;
 
-        // TODO: Brauchen wir das? Delay-Line Groesse wird in der Deklaration vereinbart.
-        // Initialize the buffer sizes based on the desired delay lengths. Since you mentioned a small
-        // delay of ~100ms and a large delay of ~10s for a 48kHz samplerate, you can calculate the buffer sizes as follows:
-        int smallDelaySize = 4800;  // 100ms delay at 48kHz
-        int largeDelaySize = 48000; // 1s delay at 48kHz
-
         int smallDelayWritePos = 0;
         int largeDelayWritePos = 0;
+        int smallDelayReadPos = 0; 
+		int largeDelayReadPos = 0; 
 
         // CCR Register
         inline void setCCR(const float result);
@@ -211,12 +212,13 @@ namespace Klangraum
         inline int logicOps(const GPR &A, const GPR &X_, const GPR &Y_);
 
         // TRAM Engine
-        inline void setSmallDelayWritePos(int smallDelayWritePos);
-        inline void setLargeDelayWritePos(int largeDelayWritePos);
+        inline void setSmallDelayWritePos(int smallDelayWritePos); //?
+        inline void setLargeDelayWritePos(int largeDelayWritePos); //?
+
         inline float readSmallDelay(int position);
         inline float readLargeDelay(int position);
-        inline void writeSmallDelay(float sample);
-        inline void writeLargeDelay(float sample);
+        inline void writeSmallDelay(float sample, int position_);
+        inline void writeLargeDelay(float sample, int position_);
 
         // Debugging
         void printRow(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);

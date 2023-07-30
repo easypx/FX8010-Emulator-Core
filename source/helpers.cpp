@@ -4,6 +4,7 @@
 
 namespace Klangraum
 {
+
     // Funktion zum Entfernen führender und nachfolgender Leerzeichen
     std::string trim(const std::string &str)
     {
@@ -39,5 +40,14 @@ namespace Klangraum
         std::string line(count, '-');
         std::cout << line << std::endl;
     }
+
+    // Wandle alle Elemente in Kleinbuchstaben um
+    // NOTE: tolower() ist Lambda Funktion in transform()
+    /*	std::transform(lines.begin(), lines.end(), lines.begin(), [](std::string str)
+                       {
+    for (char& c : str) {
+        c = std::tolower(c);
+    }
+    return str; });*/
 
 } // namespace Klangraum

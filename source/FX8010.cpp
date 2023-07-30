@@ -112,6 +112,8 @@ namespace Klangraum
 			lookupTablesExp.push_back(temp);
 		}
 
+		// loadFile(path);
+
 		// Delaylines
 		//--------------------------------------------------------------------------------
 		// Speicherallokation nicht ganz klar. Dauert resize() zu lange?
@@ -119,10 +121,13 @@ namespace Klangraum
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
 		if (DEBUG)
 			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
-		smallDelayBuffer.reserve(4800);	 // 100ms
-		largeDelayBuffer.reserve(48000); // 1s
+		smallDelayBuffer.reserve(smallDelaySize); // 100ms max. Gesamtgroesse
+		largeDelayBuffer.reserve(largeDelaySize); // 1s max. Gesamtgroesse
+		smallDelayReadPos = iTRAMSize - 1;		  // Default Leseposition (letztes Element)
+		largeDelayReadPos = xTRAMSize - 1;		  // Default Leseposition (letztes Element)
 
 		// I/O Buffers initialisieren?
+
 		if (DEBUG)
 			printLine(80);
 	}
@@ -227,13 +232,11 @@ namespace Klangraum
 	int FX8010::setRegisterValue(const std::string &key, float value)
 	{
 		bool found = false;
-		float newValue = 0;
 		for (auto &element : registers)
 		{
 			if (element.registerName == key)
 			{
 				element.registerValue = value;
-				newValue = element.registerValue;
 				found = true;
 				break;
 			}
@@ -380,8 +383,8 @@ namespace Klangraum
 		{
 			if (DEBUG)
 				cout << "Deklaration gefunden" << endl;
-			std::string registerTyp = match[1];
-			std::string registerName = match[2];
+			const std::string registerTyp = match[1];
+			const std::string registerName = match[2];
 			std::string registerValue = "";
 			if (match[3].matched)
 			{
@@ -398,9 +401,10 @@ namespace Klangraum
 			if (findRegisterIndexByName(registers, registerName) == -1)
 			{
 				// Lege neues Temp-GPR an
-				GPR reg;
-				reg = {0, "", 0, 0}; // Initialisieren
+				GPR reg = {0, "", 0, 0}; // Initialisieren
+
 				// Überprüfen, ob der String in der Map existiert
+				// NOTE: Im Grunde ist das ueberfluessig, weil Regex auf Types prueft
 				if (typeMap.find(registerTyp) != typeMap.end())
 				{
 					reg.registerType = typeMap[registerTyp];
@@ -439,7 +443,6 @@ namespace Klangraum
 						else
 						{
 							reg.IOIndex = stoi(registerValue);
-							// return true;
 						}
 					}
 					else
@@ -455,7 +458,6 @@ namespace Klangraum
 				registers.push_back(reg);
 				if (DEBUG)
 					cout << "GPR: " << reg.registerType << " | " << reg.registerName << " | " << reg.registerValue << " | " << reg.IOIndex << endl;
-				return true;
 			}
 			else
 			{
@@ -466,6 +468,7 @@ namespace Klangraum
 					cout << "Multiple Variabledenklaration" << endl;
 				return false;
 			}
+			return true;
 		}
 
 		// Teste auf Leerzeile
@@ -483,8 +486,8 @@ namespace Klangraum
 		{
 			if (DEBUG)
 				cout << "Deklaration TRAMSize gefunden" << endl;
-			std::string keyword = match[1];
-			std::string tramSize = match[2];
+			const std::string keyword = match[1];
+			const std::string tramSize = match[2];
 			if (keyword == "itramsize")
 			{
 				iTRAMSize = stoi(tramSize);
@@ -500,7 +503,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen und initialisieren
-					smallDelayBuffer.resize(iTRAMSize, 0);
+					smallDelayBuffer.resize(iTRAMSize, 0.0);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
 				}
@@ -520,7 +523,7 @@ namespace Klangraum
 				else
 				{
 					// Größe des Delayline Vectors anpassen
-					largeDelayBuffer.resize(xTRAMSize, 0);
+					largeDelayBuffer.resize(xTRAMSize, 0.0);
 					if (DEBUG)
 						cout << "xTRAMSize: " << xTRAMSize << endl;
 				}
@@ -533,15 +536,18 @@ namespace Klangraum
 		// Wenn gültige Instruktion
 		else if (std::regex_match(input, match, pattern4))
 		{
-			Instruction instruction;
-			instruction = {0, 0, 0, 0, 0, 0, 0}; // initialisierung
 			if (DEBUG)
 				cout << "Instruktion gefunden" << endl;
-			std::string keyword = match[1];
+
+			// Lege neue Instruktion an
+			Instruction instruction = {0, 0, 0, 0, 0, 0, 0}; // Initialisierung
+
+			// Extrahiere aus Regex-Erfassungsgruppen
+			const std::string keyword = match[1];
 			const std::string R = match[2];
 			const std::string A = match[3];
-			std::string X = match[4];
-			std::string Y = match[5];
+			const std::string X = match[4];
+			const std::string Y = match[5];
 
 			// TODO:
 			// Wenn instruction.operand1.registerType = INPUT -> Fehler: R darf kein Input sein
@@ -554,7 +560,6 @@ namespace Klangraum
 
 			// GPR R
 			//------------------------------------------------------------------------------------------
-
 			instruction.operand1 = mapRegisterToIndex(R);
 			if (instruction.operand1 == -1)
 			{
@@ -582,6 +587,7 @@ namespace Klangraum
 					// Setze Flag instruction.hasOutput = true
 					instruction.hasOutput = true;
 				}
+
 				if (DEBUG)
 					cout << "R: " << instruction.operand1 << " | ";
 			}
@@ -606,6 +612,7 @@ namespace Klangraum
 					// Setze Flag instruction.hasInput
 					instruction.hasInput = true;
 				}
+
 				if (DEBUG)
 					cout << "A: " << instruction.operand2 << " | ";
 			}
@@ -628,8 +635,7 @@ namespace Klangraum
 				if (registers[instruction.operand3].registerType == INPUT)
 				{
 					// Setze Flag instruction.hasInput
-					if (!instruction.hasInput)
-						instruction.hasInput = true;
+					instruction.hasInput = true;
 				}
 				if (DEBUG)
 					cout << "X: " << instruction.operand3 << " | ";
@@ -654,8 +660,7 @@ namespace Klangraum
 				if (registers[instruction.operand4].registerType == INPUT)
 				{
 					// Setze Flag instruction.hasInput
-					if (!instruction.hasInput)
-						instruction.hasInput = true;
+					instruction.hasInput = true;
 				}
 				if (DEBUG)
 					cout << "Y: " << instruction.operand4 << endl;
@@ -717,7 +722,7 @@ namespace Klangraum
 			// if (DEBUG) cout << reg.registerValue;
 			registers.push_back(reg);
 			// Ermittle Index des neu angelegten Registers
-			return index = findRegisterIndexByName(registers, registerName);
+			return findRegisterIndexByName(registers, registerName);
 		}
 		// wenn GPR nicht existiert und keine Zahl (haette deklariert sein muessen)
 		else if (index == -1 && !isNumber(registerName))
@@ -765,21 +770,13 @@ namespace Klangraum
 				{
 					c = std::tolower(c);
 				}
+
 				// Zeile (String) in Vector schreiben
 				lines.push_back(line);
 			}
 
-			// Wandle alle Elemente in Kleinbuchstaben um
-			// NOTE: tolower() ist Lambda Funktion in transform()
-			/*	std::transform(lines.begin(), lines.end(), lines.begin(), [](std::string str)
-							   {
-			for (char& c : str) {
-				c = std::tolower(c);
-			}
-			return str; });*/
-
 			// Syntaxcheck/Parser/Mapper
-			//--------------------------
+			//--------------------------------------------------------------------------------
 			// TODO: Überprüfe jede mögliche Deklaration/Instruktion mit bestimmtem Regex-Muster.
 			// zusätzlich Range-Check, ...
 
@@ -831,7 +828,6 @@ namespace Klangraum
 					cout << colorMap[COLOR_GREEN] << "Keine Syntaxfehler gefunden." << colorMap[COLOR_NULL] << endl;
 				if (DEBUG)
 					printLine(80);
-				return true;
 			}
 		}
 		else
@@ -840,6 +836,7 @@ namespace Klangraum
 				cout << colorMap[COLOR_RED] << "Fehler beim Oeffnen der Datei." << colorMap[COLOR_NULL] << endl;
 			return false;
 		}
+		return true;
 	}
 
 	// CHECKED
@@ -867,16 +864,34 @@ namespace Klangraum
 	// NOT CHECKED
 	// Implement a method to write a sample into each delay line. When writing a sample,
 	// you need to update the write position and wrap it around if it exceeds the buffer size.
-	inline void FX8010::writeSmallDelay(float sample)
+	inline void FX8010::writeSmallDelay(float sample, int position_)
 	{
-		smallDelayBuffer[smallDelayWritePos] = sample;
-		smallDelayWritePos = (smallDelayWritePos + 1) % smallDelaySize;
+		// Range-Check
+		if (position_ < 0)
+		{
+			position_ = 0;
+		}
+		else if (position_ > iTRAMSize - 1)
+		{
+			position_ = iTRAMSize - 1;
+		}
+		smallDelayBuffer[smallDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
+		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
-	inline void FX8010::writeLargeDelay(float sample)
+	inline void FX8010::writeLargeDelay(float sample, int position_)
 	{
-		largeDelayBuffer[largeDelayWritePos] = sample;
-		largeDelayWritePos = (largeDelayWritePos + 1) % largeDelaySize;
+		// Range-Check
+		if (position_ < 0)
+		{
+			position_ = 0;
+		}
+		else if (position_ > xTRAMSize - 1)
+		{
+			position_ = xTRAMSize - 1;
+		}
+		largeDelayBuffer[largeDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
+		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
 	}
 
 	// NOT CHECKED
@@ -884,16 +899,44 @@ namespace Klangraum
 	// To do linear interpolation, you need to find the fractional part of the read position
 	// and interpolate between the two adjacent samples.
 
-	inline float FX8010::readSmallDelay(int position)
+	inline float FX8010::readSmallDelay(int position_)
 	{
-		int readPos = position % smallDelaySize;
-		return smallDelayBuffer[readPos];
+		// Lesepointer läuft Schreibpointer hinterher!
+		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (position_ = 1)
+		// Wenn position_ > 1 müssen wir Lesepointer zurückstellen!
+
+		// Range-Check
+		if (position_ < 1)
+		{
+			position_ = 1; // position_ muss mind. 1 sein!
+		}
+		else if (position_ > iTRAMSize - 1)
+		{
+			position_ = iTRAMSize - 1; // position_ muss kleiner iTRAMSize sein!
+		}
+		// smallDelayReadPos wird mit (iTRAMSize-1) initialisiert, welches das letzte Element ist!
+		// Mit (position_ - 1) stellen wir den Lesepointer zurück
+		float out = smallDelayBuffer[smallDelayReadPos - (position_ - 1)]; // Lese Sample aus Delayline
+		smallDelayReadPos = smallDelayReadPos + 1 % iTRAMSize;			   // Inkrementiere Lesepointer (Ringbuffer)
+		return out;
 	}
 
-	inline float FX8010::readLargeDelay(int position)
+	inline float FX8010::readLargeDelay(int position_)
 	{
-		int readPos = position % largeDelaySize;
-		return largeDelayBuffer[readPos];
+		// Range-Check
+		if (position_ < 1)
+		{
+			position_ = 1; // position_ muss mind. 1 sein!
+		}
+		else if (position_ > xTRAMSize - 1)
+		{
+			position_ = xTRAMSize - 1; // position_ muss kleiner xTRAMSize sein!
+		}
+		// largeDelayReadPos wird mit (xTRAMSize-1) initialisiert, welches das letzte Element ist!
+		// Mit (position_ - 1) stellen wir den Lesepointer zurück
+		float out = largeDelayBuffer[largeDelayReadPos - (position_ - 1)]; // Lese Sample aus Delayline
+		largeDelayReadPos = largeDelayReadPos + 1 % xTRAMSize;			   // Inkrementiere Lesepointer (Ringbuffer)
+		return out;
 	}
 
 	// Funktion, die vier float-Argumente erwartet und eine zeilenweise Ausgabe in der gewünschten Form erstellt
@@ -915,195 +958,200 @@ namespace Klangraum
 		return instructionCounter;
 	}
 
+	// Hier werden Instruktionen ausgefuehrt, basierend auf den Registern und Opcodes
 	std::vector<float> FX8010::process(const std::vector<float> &inputSamples)
+
 	{
+		// Endflag fuer einen Samplezyklus. Wird mit END im Sourcecode gesetzt.
+		bool isEND = false;
+		// Initialisiere Outputbuffer
+		std::vector<float> outputSamples;
+		outputSamples.resize(numChannels);
+		// Skip n Instructions
+		int numSkip = 0;
+
+		// Durchlaufen der Instruktionen und Ausfuehren des Emulators
+		do
 		{
-			// Endflag fuer einen Samplezyklus. Wird mit END im Sourcecode gesetzt.
-			bool isEND = false;
-			// Initialisiere Outputbuffer
-			std::vector<float> outputSamples;
-			outputSamples.resize(numChannels);
-			// Skip n Instructions
-			int numSkip = 0;
-
-			// Durchlaufen der Instruktionen und Ausfuehren des Emulators
-			do
+			for (auto &instruction : instructions)
 			{
-				for (auto &instruction : instructions)
+				if (numSkip == 0)
 				{
-					if (numSkip == 0)
+					// Zugriff auf die Operanden und Registerinformationen
+					const int opcode = instruction.opcode; // read only
+					int operand1Index = instruction.operand1;
+					int operand2Index = instruction.operand2;
+					int operand3Index = instruction.operand3;
+					int operand4Index = instruction.operand4;
+
+					// Zugriff auf die GPR und deren Daten
+					GPR &R = registers[operand1Index]; // read/write
+					GPR &A = registers[operand2Index]; // read/write
+					GPR &X = registers[operand3Index]; // read/write
+					GPR &Y = registers[operand4Index]; // read/write
+
+					// TODO: if (instruction.hasCCR)
+
+					if (instruction.hasInput)
 					{
-						// Zugriff auf die Operanden und Registerinformationen
-						const int opcode = instruction.opcode; // read only
-						int operand1Index = instruction.operand1;
-						int operand2Index = instruction.operand2;
-						int operand3Index = instruction.operand3;
-						int operand4Index = instruction.operand4;
-
-						// Zugriff auf die GPR und deren Daten
-						GPR &R = registers[operand1Index]; // read/write
-						GPR &A = registers[operand2Index]; // read/write
-						GPR &X = registers[operand3Index]; // read/write
-						GPR &Y = registers[operand4Index]; // read/write
-
-						// Hier koennen Sie die Instruktionen ausfuehren, basierend auf den Registern und Opcodes
-						// TODO: Stereo Inputs?
-						// if (instruction.hasCCR)
-
-						if (instruction.hasInput)
-						{
-							if (A.registerType == INPUT)
-								A.registerValue = inputSamples[A.IOIndex]; // Sample Input, TODO: inputSample[A.IOIndex], Input Buffer as Vector with numChannels?
-							if (X.registerType == INPUT)
-								X.registerValue = inputSamples[A.IOIndex];
-							if (Y.registerType == INPUT)
-								Y.registerValue = inputSamples[A.IOIndex];
-						}
-
-						switch (opcode)
-						{
-						case MAC:
-							// R = A + X * Y
-							R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
-							accumulator = R.registerValue; // Copy unsaturated value into accumulator
-							// Saturation
-							R.registerValue = saturate(R.registerValue, 1.0);
-							// Set CCR register based on R
-							setCCR(R.registerValue);
-							break;
-						case MACINT:
-							// R = A + X * Y
-							R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
-							accumulator = R.registerValue; // Copy unsaturated value into accumulator
-							// Saturation
-							R.registerValue = saturate(R.registerValue, 1.0);
-							// Set CCR register based on R
-							setCCR(R.registerValue);
-							break;
-						case ACC3:
-							// R = A + X + Y
-							R.registerValue = A.registerValue + X.registerValue + Y.registerValue;
-							accumulator = R.registerValue; // Copy unsaturated value into accumulator
-							// Saturation
-							R.registerValue = saturate(R.registerValue, 1.0);
-							// Set CCR register based on R
-							setCCR(R.registerValue);
-							break;
-						case LOG:
-							// TODO: Y = sign
-							R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[static_cast<int>(X.registerValue)], -1.0, 1.0);
-							accumulator = R.registerValue;
-							break;
-						case EXP:
-							R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
-							accumulator = R.registerValue;
-							break;
-						case MACW:
-							R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
-							accumulator = R.registerValue;
-							break;
-						case MACINTW:
-							R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
-							accumulator = R.registerValue;
-							break;
-						case MACMV:
-							accumulator = accumulator + X.registerValue * Y.registerValue;
-							R.registerValue = A.registerValue;
-							break;
-						case ANDXOR:
-							R.registerValue = logicOps(A, X, Y);
-							break;
-						case TSTNEG:
-							R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : -X.registerValue; // TODO: Check
-							accumulator = R.registerValue;
-							break;
-						case LIMIT:
-							R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
-							accumulator = R.registerValue;
-							break;
-						case LIMITN:
-							R.registerValue = A.registerValue < Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
-							accumulator = R.registerValue;
-							break;
-						case SKIP:
-							// Wenn X = CCR, dann überspringe Y Instructions.
-							if (static_cast<int>(X.registerValue) == registers[0].registerValue)
-								numSkip = static_cast<int>(Y.registerValue);
-							break;
-						case INTERP:
-							R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
-							accumulator = R.registerValue;
-							break;
-						case IDELAY:
-							if (R.registerType == READ)
-							{
-								A.registerValue = readSmallDelay(Y.registerValue); // Y = Adresse, (Y-2048) mit 11 Bit Shift
-							}
-							else if (R.registerType == WRITE)
-							{
-								writeSmallDelay(A.registerValue); // A = value
-							}
-							break;
-						case XDELAY:
-							if (R.registerType == READ)
-							{
-								A.registerValue = readLargeDelay(Y.registerValue);
-							}
-							else if (R.registerType == WRITE)
-							{
-								writeLargeDelay(A.registerValue);
-							}
-							break;
-						case END:
-							// End of sample cycle
-							isEND = true;
-							break;
-						default:
-							// std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
-							break;
-						}
-
-						instructionCounter++;
-
-						if (PRINT_REGISTERS && !isEND)
-							printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
-
-						// wenn R = OUTPUT Typ, an VST Output zurückgeben
-						if (R.registerType == OUTPUT)
-						{
-							// return R.registerValue; // Beendet process() und ignoriert nachfolgende Instructions. Sinnvoll?
-							//  Schreibe R in den Outputbuffer mit Index (für Mehrkanal)
-							outputSamples[R.IOIndex] = R.registerValue;
-						}
-
-						// Reset aller TEMP GPR nach einem Samplezyklus
-						if (isEND)
-						{
-							// NOTE: not really needed, performance issue
-							// TODO: Extra Temp-Vector machen für schnelles Löschen?
-							/*for (auto &reg : registers)
-							{
-								if (reg.registerType == TEMP)
-								{
-									reg.registerValue = 0;
-								}
-							}*/
-							return outputSamples;
-						}
-						// Debug outputs
-						// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
-						// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
-						// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
+						if (A.registerType == INPUT)
+							A.registerValue = inputSamples[A.IOIndex];
+						if (X.registerType == INPUT)
+							X.registerValue = inputSamples[A.IOIndex];
+						if (Y.registerType == INPUT)
+							Y.registerValue = inputSamples[A.IOIndex];
 					}
-					else
+
+					// Befehlsdecoder
+					//--------------------------------------------------------------------------------
+					switch (opcode)
 					{
-						numSkip = (numSkip > 0) ? --numSkip : 0;
-						if (PRINT_REGISTERS)
-							cout << "Skip instruction!" << endl;
+					case MAC:
+						// R = A + X * Y
+						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
+						accumulator = R.registerValue; // Copy unsaturated value into accumulator
+						// Saturation
+						R.registerValue = saturate(R.registerValue, 1.0);
+						// Set CCR register based on R
+						setCCR(R.registerValue);
+						break;
+					case MACINT:
+						// R = A + X * Y
+						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
+						accumulator = R.registerValue; // Copy unsaturated value into accumulator
+						// Saturation
+						R.registerValue = saturate(R.registerValue, 1.0);
+						// Set CCR register based on R
+						setCCR(R.registerValue);
+						break;
+					case ACC3:
+						// R = A + X + Y
+						R.registerValue = A.registerValue + X.registerValue + Y.registerValue;
+						accumulator = R.registerValue; // Copy unsaturated value into accumulator
+						// Saturation
+						R.registerValue = saturate(R.registerValue, 1.0);
+						// Set CCR register based on R
+						setCCR(R.registerValue);
+						break;
+					case LOG:
+						// TODO: Y = sign
+						R.registerValue = linearInterpolate(A.registerValue, lookupTablesLog[static_cast<int>(X.registerValue)], -1.0, 1.0);
+						accumulator = R.registerValue;
+						break;
+					case EXP:
+						R.registerValue = linearInterpolate(A.registerValue, lookupTablesExp[X.registerValue], 0, 1.0);
+						accumulator = R.registerValue;
+						break;
+					case MACW:
+						R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
+						accumulator = R.registerValue;
+						break;
+					case MACINTW:
+						R.registerValue = wrapAround(A.registerValue + X.registerValue * Y.registerValue); // TODO: Check
+						accumulator = R.registerValue;
+						break;
+					case MACMV:
+						accumulator = accumulator + X.registerValue * Y.registerValue;
+						R.registerValue = A.registerValue;
+						break;
+					case ANDXOR:
+						R.registerValue = logicOps(A, X, Y);
+						break;
+					case TSTNEG:
+						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : -X.registerValue; // TODO: Check
+						accumulator = R.registerValue;
+						break;
+					case LIMIT:
+						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
+						accumulator = R.registerValue;
+						break;
+					case LIMITN:
+						R.registerValue = A.registerValue < Y.registerValue ? X.registerValue : Y.registerValue; // TODO: Check
+						accumulator = R.registerValue;
+						break;
+					case SKIP:
+						// Wenn X = CCR, dann überspringe Y Instructions.
+						if (static_cast<int>(X.registerValue) == registers[0].registerValue)
+							numSkip = static_cast<int>(Y.registerValue);
+						break;
+					case INTERP:
+						R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
+						accumulator = R.registerValue;
+						break;
+					case IDELAY:
+						// READ, A, AT, Y
+						if (R.registerType == READ)
+						{
+							A.registerValue = readSmallDelay(static_cast<int>(Y.registerValue)); // Y = Adresse, (Y-2048) mit 11 Bit Shift
+						}
+						// WRITE, A, AT, Y
+						else if (R.registerType == WRITE)
+						{
+							writeSmallDelay(A.registerValue, static_cast<int>(Y.registerValue)); // A = value
+						}
+						break;
+					case XDELAY:
+						// READ, A, AT, Y
+						if (R.registerType == READ)
+						{
+							A.registerValue = readLargeDelay(static_cast<int>(Y.registerValue));
+						}
+						// WRITE, A, AT, Y
+						else if (R.registerType == WRITE)
+						{
+							writeLargeDelay(A.registerValue, static_cast<int>(Y.registerValue));
+						}
+						break;
+					case END:
+						// End of sample cycle
+						isEND = true;
+						break;
+					default:
+						// std::cout << "Opcode: " << opcode << " ist nicht implementiert." << std::endl;
+						break;
 					}
+
+					// Zähle Instruktionen
+					instructionCounter++;
+
+					// Anzeige der Registerwerte
+					if (PRINT_REGISTERS && !isEND)
+						printRow(opcode, R.registerValue, A.registerValue, X.registerValue, Y.registerValue, accumulator);
+
+					// wenn R = OUTPUT Typ
+					if (R.registerType == OUTPUT)
+					{
+						// Schreibe R in den Outputbuffer mit Index (für Mehrkanal)
+						outputSamples[R.IOIndex] = R.registerValue;
+					}
+
+					// Debug outputs
+					// std::cout << testSample[i] << " , " << operand1Register.registerValue << std::endl; // CVS Daten in Console (als tabelle für https://www.desmos.com/)
+					// std::cout << "(" << testSample[i] << " , " << perand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
+					// data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
 				}
-			} while (!isEND);
-			// return 0;
-		}
+				else
+				{
+					// Dekrementiere Skip-Counter
+					numSkip = (numSkip > 0) ? --numSkip : 0;
+					if (PRINT_REGISTERS)
+						cout << "Skip instruction!" << endl;
+				}
+			}
+		} while (!isEND);
+		// Reset aller TEMP GPR nach einem Samplezyklus
+		// NOTE: not really needed, performance issue
+		// TODO: Extra Temp-Vector machen für schnelles Löschen?
+		/*for (auto &reg : registers)
+		{
+			if (reg.registerType == TEMP)
+			{
+				reg.registerValue = 0;
+			}
+		}*/
+
+		// Gib Vektor mit (Mehrkanal-)Sample(s) an VST zurück
+		return outputSamples;
 	}
+
 } // namespace Klangraum
