@@ -5,9 +5,11 @@
 
 using namespace Klangraum;
 
-#define RAMP_TEST 0
+#define SINOID_TEST 1
+#define BIPOLAR_RAMP_TEST 0
+#define UNIPOLAR_RAMP_TEST 0
 #define DC_TEST 0
-#define DIRAC_TEST 1
+#define DIRAC_TEST 0
 #define SLIDER_TEST 0
 
 int main()
@@ -16,7 +18,9 @@ int main()
     int numChannels = 1;
 
     // Create an instance of FX8010 class
-    Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
+    // Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
+    // Erzeugung eines std::unique_ptr für die Instanz
+    std::unique_ptr<Klangraum::FX8010> fx8010 = std::make_unique<Klangraum::FX8010>(numChannels);
 
     // Sourcecode laden und parsen
     if (fx8010->loadFile("testcode.da"))
@@ -29,22 +33,49 @@ int main()
             cout << element << endl;
         }
 
-        // Vector mit Ramp erzeugen
-        std::vector<float> ramp;
+        // Erzeugung des Vektors mit 32 float-Werten
+        std::vector<float> sinoid;
 
-        // linearen Sampledaten 0 bis 1.0 bzw. -1.0 bis 1.0
+        // Füllen des Vektors mit einer Sinuswelle von -1.0 bis 1.0 Amplitude
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
-            float value = static_cast<float>(i) / (AUDIOBLOCKSIZE - 1); // Wertebereich von 0 bis 1.0
-            ramp.push_back(value);
+            float phase = static_cast<float>(i) / (AUDIOBLOCKSIZE - 1) * 2 * PI; // Phasenwert von 0 bis 2*pi
+            float value = std::sin(phase);                                       // Wertebereich von -1.0 bis 1.0
+            sinoid.push_back(value);
+        }
+
+        // Ausgabe des Vektors
+        // for (int i = 0; i < AUDIOBLOCKSIZE; i++)
+        // {
+        //     std::cout << sinoid[i] << std::endl;
+        // }
+
+        // Vector mit Bipolar-Ramp erzeugen
+        std::vector<float> bipolarRamp;
+
+        // linearen Sampledaten -1.0 bis 1.0
+        for (int i = -(AUDIOBLOCKSIZE) / 2.0; i < (AUDIOBLOCKSIZE / 2.0); i++)
+        {
+            float value = static_cast<float>(i) / (AUDIOBLOCKSIZE / 2.0); // Wertebereich von 0 bis 1.0
+            bipolarRamp.push_back(value);
         }
 
         // Ausgabe des Testsamples
         // for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         // {
-        //     cout << ramp[i] << ", ";
+        //     cout << bipolarRamp[i] << ", ";
         // }
         // cout << endl;
+
+        // Vector mit Unipolar-Ramp erzeugen
+        std::vector<float> unipolarRamp;
+
+        // linearen Sampledaten 0 bis 1.0
+        for (int i = 0; i < AUDIOBLOCKSIZE; i++)
+        {
+            float value = static_cast<float>(i) / AUDIOBLOCKSIZE; // Wertebereich von 0 bis 1.0
+            unipolarRamp.push_back(value);
+        }
 
         // Dirac Impuls zum Testen der Delayline
         // std::vector<float> diracImpulse;
@@ -75,7 +106,7 @@ int main()
         std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
 
         // Vergleich mit Null mit einer kleinen Toleranz
-        double tolerance = 1e-6;
+        double tolerance = 1e-4;
 
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
@@ -95,15 +126,35 @@ int main()
                 }
             }
 
-            // Nutze dieselben Sampledaten als Stereoinput
-            // AC-Testsample
+            // AC-Testsample SINOID
             //----------------------------------------------------------------
-            if (RAMP_TEST)
+            if (SINOID_TEST)
+            {
+                for (int j = 0; j < numChannels; j++)
+                {
+                    inputBuffer[j] = sinoid[i]; // AC-Testsample
+                }
+            }
+
+            // AC-Testsample BIPOLAR_RAMP
+            //----------------------------------------------------------------
+            if (BIPOLAR_RAMP_TEST)
             {
 
                 for (int j = 0; j < numChannels; j++)
                 {
-                    inputBuffer[j] = ramp[i]; // AC-Testsample
+                    inputBuffer[j] = bipolarRamp[i]; // AC-Testsample
+                }
+            }
+
+            // AC-Testsample UNIPOLAR_RAMP
+            //----------------------------------------------------------------
+            if (UNIPOLAR_RAMP_TEST)
+            {
+
+                for (int j = 0; j < numChannels; j++)
+                {
+                    inputBuffer[j] = unipolarRamp[i]; // AC-Testsample
                 }
             }
 
@@ -136,11 +187,15 @@ int main()
             // NOTE: Anzeige beeinflusst Zeitmessung stark!
             if (DEBUG)
             {
-                cout << "Sample: " << std::setw(3) << i << " | "
-                     << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
-                cout << "Output (0): " << std::setw(12) << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
-                // cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";
-                // cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
+                // cout << "Sample: " << std::setw(3) << i << " | "
+                //      << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
+                // cout << "Output (0): " << std::setw(12) << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                //  cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";
+                //  cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
+
+                // CSV Output, kann direkt in https://www.desmos.com/ genutzt werden
+                // NOTE: Desmos zeigt sehr kleine Werte falsch an! Siehe "tolerance" Variable
+                cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
             }
         }
 
@@ -180,7 +235,7 @@ int main()
         }
     }
 cleanUp:
-    delete fx8010;
-    
+    // delete fx8010;
+
     return 0;
 }
