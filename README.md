@@ -15,7 +15,7 @@ However, if we factor in the multi-core processing, we're able to emulate much m
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic (CPU architecture, Compiler work, Memory organisation ...) in great detail! 😃
 
 Usage:  
-- For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will them.)
+- For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
 - Not all instructions are tested, but should not crash.
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be adapted)
 
