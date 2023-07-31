@@ -16,8 +16,8 @@ However, if we factor in the multi-core processing, we're able to emulate much m
 A special shout out to ChatGPT which provides an excellent assistant and talks about every topic in great detail.
 
 Usage:  
-- For console debug output change DEBUG and PRINT_REGISTERS defines in fx8010.h
-- Not all instructions are tested, but should not crash
+- For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will them.)
+- Not all instructions are tested, but should not crash.
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be adapted)
 
 ```cpp
