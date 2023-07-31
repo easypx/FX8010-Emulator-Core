@@ -35,10 +35,10 @@ namespace Klangraum
 		errorMap[ERROR_VAR_NOT_DECLARED] = "Variable nicht deklariert";
 		errorMap[ERROR_INPUT_FOR_R_NOT_ALLOWED] = "Verwendung von Input fuer R ist nicht erlaubt";
 		errorMap[ERROR_NO_END_FOUND] = "Kein 'END' gefunden";
-		errorMap[ERROR_IO_INDEX_TO_LARGE] = "I/O Index zu gross";
+		errorMap[ERROR_IO_INDEX_OUT_OF_RANGE] = "I/O Index ausserhalb des gueltigen Bereichs (max. " + std::to_string(numChannels) + ")";
 		errorMap[ERROR_SYNTAX_NOT_VALID] = "Ungueltige Syntax";
-		errorMap[ERROR_ITRAMSIZE_TO_LARGE] = "iTRAM Size ueberschritten (max. 4800)";
-		errorMap[ERROR_XTRAMSIZE_TO_LARGE] = "xRAM Size ueberschritten (max. 48000)";
+		errorMap[ERROR_ITRAMSIZE_TO_LARGE] = "iTRAM Size ausserhalb des gueltigen Bereichs (max. " + std::to_string(MAX_IDELAY_SIZE) + ")";
+		errorMap[ERROR_XTRAMSIZE_TO_LARGE] = "xRAM Size ausserhalb des gueltigen Bereichs (max. " + std::to_string(MAX_XDELAY_SIZE) + ")";
 
 		// Initialisieren
 		errorList.clear();
@@ -354,7 +354,7 @@ namespace Klangraum
 
 		// Deklarationen: z.B. static a || static b = 1.0
 		// std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
-		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
+		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const|noise)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
 		std::regex pattern2(R"(^\s*$)");
@@ -432,7 +432,7 @@ namespace Klangraum
 						// TODO: I/O-Initialisierung im Sourcecode?
 						if (stoi(registerValue) > numChannels - 1)
 						{
-							error.errorDescription = errorMap[ERROR_IO_INDEX_TO_LARGE];
+							error.errorDescription = errorMap[ERROR_IO_INDEX_OUT_OF_RANGE];
 							error.errorRow = errorCounter;
 							errorList.push_back(error);
 							if (DEBUG)
@@ -539,7 +539,7 @@ namespace Klangraum
 				cout << "Instruktion gefunden" << endl;
 
 			// Lege neue Instruktion an
-			Instruction instruction = {0, 0, 0, 0, 0, 0, 0}; // Initialisierung
+			Instruction instruction = {0, 0, 0, 0, 0, 0, 0, 0}; // Initialisierung
 
 			// Extrahiere aus Regex-Erfassungsgruppen
 			const std::string keyword = match[1];
@@ -611,6 +611,10 @@ namespace Klangraum
 					// Setze Flag instruction.hasInput
 					instruction.hasInput = true;
 				}
+				else if (registers[instruction.operand2].registerType == NOISE)
+				{
+					instruction.hasNoise = true;
+				}
 
 				if (DEBUG)
 					cout << "A: " << instruction.operand2 << " | ";
@@ -636,6 +640,10 @@ namespace Klangraum
 					// Setze Flag instruction.hasInput
 					instruction.hasInput = true;
 				}
+				else if (registers[instruction.operand3].registerType == NOISE)
+				{
+					instruction.hasNoise = true;
+				}
 				if (DEBUG)
 					cout << "X: " << instruction.operand3 << " | ";
 			}
@@ -660,6 +668,10 @@ namespace Klangraum
 				{
 					// Setze Flag instruction.hasInput
 					instruction.hasInput = true;
+				}
+				else if (registers[instruction.operand4].registerType == NOISE)
+				{
+					instruction.hasNoise = true;
 				}
 				if (DEBUG)
 					cout << "Y: " << instruction.operand4 << endl;
@@ -897,18 +909,24 @@ namespace Klangraum
 
 	inline float FX8010::readSmallDelay(int position_)
 	{
-		// Erläuterung eines Ringbuffers:
+		// Erläuterung zum Ringbuffer:
 		// Lesepointer läuft Schreibpointer hinterher!
-		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (iTRAMSize - 1)
-		// Wenn position_ > 0 müssen wir Lesepointer zurückstellen im Gegensatz zu Schreibpointer, der vorgestellt werden muss!
+		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (Index: iTRAMSize - 1),
+		// Schreibpointer zeigt auf 1. Element. (Index: 0)
+		// Wenn Lesepointer (position_ > 0) müssen wir diesen zurückstellen im Gegensatz zu Schreibpointer,
+		// der vorgestellt werden muss, wenn wir spaeter Schreiben wollen! Normalerweise bleibt der dieser
+		// zu Beginn auf Index: 0.
+		// Beide Pointer werden beim Aufruf der Methoden inkrementiert mit Wraparound.
 
 		// Range-Check
-		position_ = std::max(0, std::min(position_, iTRAMSize - 1));
 		// smallDelayReadPos wird mit (iTRAMSize-1) initialisiert, welches das letzte Element ist!
-		// Mit (smallDelayReadPos - 1) stellen wir den Lesepointer zurück
+		position_ = std::max(0, std::min(position_, iTRAMSize - 1));
+
 		// Lese Sample aus Delayline
+		// Mit (smallDelayReadPos - position_) stellen wir den Lesepointer zurück.
+		// NOTE: Modulo Operator sorgt für einen Wraparound.
 		float out = smallDelayBuffer[(smallDelayReadPos - position_) % iTRAMSize];
-		// Inkrementiere Lesepointer (Ringbuffer)
+		// Inkrementiere Lesepointer (Ringbuffer mit Wraparound)
 		smallDelayReadPos = (smallDelayReadPos + 1) % iTRAMSize;
 		return out;
 	}
@@ -946,6 +964,17 @@ namespace Klangraum
 		return instructionCounter;
 	}
 
+	// Fast White Noise
+	// Linear Feedback Shift Register (LFSR) als Pseudo-Zufallszahlengenerator
+	float FX8010::whitenoise()
+	{
+		float noise = 0.0f;
+		g_x1 ^= g_x2;
+		noise = g_x2 * g_fScale;
+		g_x2 += g_x1;
+		return noise;
+	}
+
 	// Hier werden Instruktionen ausgefuehrt, basierend auf den Registern und Opcodes
 	std::vector<float> FX8010::process(const std::vector<float> &inputSamples)
 
@@ -977,9 +1006,8 @@ namespace Klangraum
 					GPR &A = registers[operand2Index]; // read/write
 					GPR &X = registers[operand3Index]; // read/write
 					GPR &Y = registers[operand4Index]; // read/write
-
-					// TODO: if (instruction.hasCCR)
-
+					
+					// Hier werden nur Instruktionen mit entsprechendem Flag getestet.
 					if (instruction.hasInput)
 					{
 						if (A.registerType == INPUT)
@@ -988,6 +1016,16 @@ namespace Klangraum
 							X.registerValue = inputSamples[A.IOIndex];
 						if (Y.registerType == INPUT)
 							Y.registerValue = inputSamples[A.IOIndex];
+					}
+					// Es genügt wenn ein Register NOISE sein kann. (deswegen else if)
+					if (instruction.hasNoise)
+					{
+						if (A.registerType == NOISE)
+							A.registerValue = whitenoise();
+						else if (X.registerType == NOISE)
+							X.registerValue = whitenoise();
+						else if (Y.registerType == NOISE)
+							Y.registerValue = whitenoise();
 					}
 
 					// Befehlsdecoder

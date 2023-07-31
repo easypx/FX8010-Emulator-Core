@@ -2,14 +2,15 @@
 
 ; Deklarationen/Definitionen
 static a ; Kommentar
-itramsize 100
-input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
+itramsize 1000
+input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-DSP! 0 - Links, 1 - Rechts
 control volume = 0.5
 control pan = 0.5
 control filter_cutoff = 0.1
 output out_l = 0 
 static rd
 static wr
+noise noise_
 
 ; Slidertest
 ;MAC out_l, 0, in_l, volume
@@ -35,13 +36,16 @@ static wr
 ;INTERP out_l, out_l, filter_cutoff, in_l
 
 ; 1-Pol Hochpassfilter
-interp a, a, filter_cutoff, in_l 
-macn out_l, in_l, a, 1 
+;interp a, a, filter_cutoff, in_l 
+;macn out_l, in_l, a, 1 
 
 ; Bedingter Sprung (siehe Sourcecode)
 ;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
 
 ; Logische Operationen (siehe Sourcecode)
 ;ANDXOR a, 1, 1, 0 ;
+
+; White Noise
+mac out_l, 0, noise_, 1.0
 
 end

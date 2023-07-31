@@ -25,13 +25,13 @@ using namespace std;
 #pragma warning(disable : 4244 4305 4715)
 
 // Nicht alle Defines werden genutzt
-#define E 2.71828         // schön zu haben
-#define PI 3.141592       // schön zu haben
-#define SAMPLERATE 48000  // originale Samplerate des DSP
-#define AUDIOBLOCKSIZE 32 // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
-#define DEBUG 1           // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 0 // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
-#define MAX_IDELAY_SIZE 4800 // 100ms max. Gesamtgroesse
+#define E 2.71828             // schön zu haben
+#define PI 3.141592           // schön zu haben
+#define SAMPLERATE 48000      // originale Samplerate des DSP
+#define AUDIOBLOCKSIZE 128    // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
+#define DEBUG 0               // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define PRINT_REGISTERS 0     // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define MAX_IDELAY_SIZE 4800  // 100ms max. Gesamtgroesse
 #define MAX_XDELAY_SIZE 48000 // 1000ms max. Gesamtgroesse
 
 namespace Klangraum
@@ -47,7 +47,7 @@ namespace Klangraum
         void initialize();
         // Der eigentliche Prozess-Loop
         std::vector<float> process(const std::vector<float> &inputSamples);
-        
+
         // Gibt Anzahl der ausgeführten Instructions zurück
         int getInstructionCounter();
         // Sourcecode laden
@@ -90,7 +90,7 @@ namespace Klangraum
         // This Map holds Key/Value pairs to assign instructions(strings) to Opcode(enum/int)
         std::map<std::string, Opcode> opcodeMap = {
             {"mac", MAC},
-            {"macn", MAC},
+            {"macn", MACN},
             {"macint", MACINT},
             {"macintw", MACINTW},
             {"acc3", ACC3},
@@ -123,7 +123,8 @@ namespace Klangraum
             READ,
             WRITE,
             AT,
-            CCR
+            CCR,
+            NOISE
         };
 
         // This Map holds Key/Value pairs to assign registertypes(strings) to RegisterType(enum/int)
@@ -137,9 +138,10 @@ namespace Klangraum
             {"itramsize", ITRAMSIZE},
             {"xtramsize", XTRAMSIZE},
             {"read", READ},
-            {"write", READ},
+            {"write", WRITE},
             {"at", AT},
-            {"ccr", CCR}};
+            {"ccr", CCR},
+            {"noise", NOISE}};
 
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
@@ -171,6 +173,7 @@ namespace Klangraum
             bool hasInput = false; // um nicht alle Instructions auf INPUT testen zu muessen
             // hasOutput nicht sinnvoll, Doppelcheck (Instruktion und R)
             bool hasOutput = false; // um nicht alle Instructions auf OUTPUT testen zu muessen
+            bool hasNoise = false;
         };
 
         // Vector, der die Instruktionen enthaelt
@@ -188,15 +191,16 @@ namespace Klangraum
         int xTRAMSize = 0;
 
         // Create a circular buffer for each delay line. You can use a std::vector to represent the buffer.
-        // std::vector<float> smallDelayBuffer; // ATTENTION: Vektoren scheinen Probleme mit zufaelligen Werten zu machen!
-        // std::vector<float> largeDelayBuffer; // ATTENTION: Vektoren scheinen Probleme mit zufaelligen Werten zu machen!
+        // std::vector<float> smallDelayBuffer; // ATTENTION: Vektoren scheinen trotz reserve() und resize() Probleme mit zufaelligen Werten zu machen!
+        // std::vector<float> largeDelayBuffer; //
         float smallDelayBuffer[MAX_IDELAY_SIZE];
         float largeDelayBuffer[MAX_XDELAY_SIZE];
 
         // Schreib-/Lesepointer
         int smallDelayWritePos = 0;
-        int largeDelayWritePos = 0;
         int smallDelayReadPos = 0;
+
+        int largeDelayWritePos = 0;
         int largeDelayReadPos = 0;
 
         // CCR Register
@@ -224,7 +228,7 @@ namespace Klangraum
         inline void writeSmallDelay(float sample, int position_);
         inline void writeLargeDelay(float sample, int position_);
 
-        // Debugging
+        // Debug Registers
         void printRow(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
 
         // Syntax Check
@@ -246,7 +250,7 @@ namespace Klangraum
             ERROR_VAR_NOT_DECLARED,
             ERROR_INPUT_FOR_R_NOT_ALLOWED,
             ERROR_NO_END_FOUND,
-            ERROR_IO_INDEX_TO_LARGE,
+            ERROR_IO_INDEX_OUT_OF_RANGE,
             ERROR_SYNTAX_NOT_VALID,
             ERROR_ITRAMSIZE_TO_LARGE,
             ERROR_XTRAMSIZE_TO_LARGE
@@ -269,6 +273,15 @@ namespace Klangraum
         vector<string> controlRegisters;
 
         float outputSamples[2] = {0};
+
+        // Fast White Noise
+        // Range (-1.0 ... 1.0)
+        // https://www.musicdsp.org/en/latest/Synthesis/216-fast-whitenoise-generator.html
+        float g_fScale = 2.0f / 0xffffffff;
+        // Seeds
+        int g_x1 = 0x70f4f854;
+        int g_x2 = 0xe1e9f0a7;
+        float FX8010::whitenoise();
     };
 
 } // namespace Klangraum

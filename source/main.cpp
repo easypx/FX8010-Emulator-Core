@@ -6,7 +6,7 @@
 using namespace Klangraum;
 
 #define SINOID_TEST 0
-#define BIPOLAR_RAMP_TEST 1
+#define BIPOLAR_RAMP_TEST 0
 #define UNIPOLAR_RAMP_TEST 0
 #define DC_TEST 0
 #define DIRAC_TEST 0
@@ -30,6 +30,8 @@ int main()
         {
             cout << element << endl;
         }
+
+        printLine(80);
 
         // Erzeugung des Vektors mit 32 float-Werten
         std::vector<float> sinoid;
@@ -109,6 +111,12 @@ int main()
         // Startzeitpunkt speichern
         auto startTime = std::chrono::high_resolution_clock::now();
 
+        // Vorbereitung der CSV Ausgabe
+        if (DEBUG)
+        {
+            cout << "CSV Output, kann direkt in https://www.desmos.com/ genutzt werden:" << endl;
+        }
+
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
         for (int i = 0; i < AUDIOBLOCKSIZE; i++)
@@ -142,7 +150,7 @@ int main()
 
                 for (int j = 0; j < numChannels; j++)
                 {
-                    inputBuffer[j] = bipolarRamp[i]/2.0; // AC-Testsample
+                    inputBuffer[j] = bipolarRamp[i] / 2.0; // AC-Testsample
                 }
             }
 
@@ -189,8 +197,12 @@ int main()
                 // CSV Output, kann direkt in https://www.desmos.com/ genutzt werden
                 // NOTE: Desmos zeigt sehr kleine Werte falsch an!
                 // Deshalb runden wir auf 0, wenn tolerance = 1e-4 unterschritten wird!
+
                 cout << ((std::abs(bipolarRamp[i]) < tolerance) ? 0.0 : bipolarRamp[i]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
-                //cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+
+                // cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                // White Noise
+                // cout << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
             }
         }
 
@@ -208,9 +220,11 @@ int main()
             cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) * static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
         }
 
+        printLine(80);
+
         // Beliebigen Registerwert anzeigen
         // NOTE: Hier wird (noch) Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
-        string testRegister = "c";
+        string testRegister = "filter_cutoff";
         float value = fx8010->getRegisterValue(testRegister);
         cout << "Registerwert fuer '" << testRegister << "': " << value << endl;
     }

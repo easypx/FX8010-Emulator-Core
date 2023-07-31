@@ -48,6 +48,26 @@ namespace Klangraum
     for (char& c : str) {
         c = std::tolower(c);
     }
-    return str; });*/
+    return str; });
+
+    float g_fScale = 2.0f / 0xffffffff;
+int g_x1 = 0x67452301;
+int g_x2 = 0xefcdab89;
+
+void whitenoise(
+  float* _fpDstBuffer, // Pointer to buffer
+  unsigned int _uiBufferSize, // Size of buffer
+  float _fLevel ) // Noiselevel (0.0 ... 1.0)
+{
+  _fLevel *= g_fScale;
+
+  while( _uiBufferSize-- )
+  {
+    g_x1 ^= g_x2;
+    *_fpDstBuffer++ = g_x2 * _fLevel;
+    g_x2 += g_x1;
+  }
+}
+*/
 
 } // namespace Klangraum
