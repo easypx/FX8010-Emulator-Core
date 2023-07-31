@@ -23,7 +23,7 @@ Usage:
 ```cpp
 static a
 itramsize 100
-input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
+input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-DSP! 0 - Links, 1 - Rechts
 control volume = 0.5
 control filter_cutoff = 0.1
 output out_l = 0 
