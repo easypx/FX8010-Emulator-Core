@@ -353,7 +353,8 @@ namespace Klangraum
 		// std::regex pattern1(R"(^\s*(static|temp)\s+((?:\w+\s*(?:=\s*\d+(?:\.\d*)?)?\s*,?\s*)+)\s*$)");
 
 		// Deklarationen: z.B. static a || static b = 1.0
-		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
+		// std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
+		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
 		std::regex pattern2(R"(^\s*$)");
@@ -362,7 +363,7 @@ namespace Klangraum
 		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)$)");
 
 		// check instructions TODO: all instructions
-		std::regex pattern4(R"(^\s*(mac|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*$)");
+		std::regex pattern4(R"(^\s*(mac|macn|macint|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*$)");
 
 		// check metadata TODO: ...
 		std::regex pattern5(R"(^\s*(comment|name|guid)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.]+)\s*$)");
@@ -859,37 +860,34 @@ namespace Klangraum
 		return errorList;
 	}
 
+	// Gib minVal oder maxVal zurück, wenn Grenzen überschritten werden, ansonsten value
+	// wie saturate()
+	int clamp(int value, int minVal, int maxVal)
+	{
+		return std::max(minVal, std::min(value, maxVal));
+	}
+
 	// NOT CHECKED
 	// Implement a method to write a sample into each delay line. When writing a sample,
 	// you need to update the write position and wrap it around if it exceeds the buffer size.
 	inline void FX8010::writeSmallDelay(float sample, int position_)
 	{
 		// Range-Check
-		if (position_ < 0)
-		{
-			position_ = 0;
-		}
-		else if (position_ > iTRAMSize - 1)
-		{
-			position_ = iTRAMSize - 1;
-		}
-		smallDelayBuffer[smallDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
+		position_ = std::max(0, std::min(position_, iTRAMSize - 1));
+		// Schreibe Sample in Delayline
+		smallDelayBuffer[smallDelayWritePos + position_] = sample;
+		// Inkrementiere Schreibpointer (Ringbuffer)
+		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize;
 	}
 
 	inline void FX8010::writeLargeDelay(float sample, int position_)
 	{
 		// Range-Check
-		if (position_ < 0)
-		{
-			position_ = 0;
-		}
-		else if (position_ > xTRAMSize - 1)
-		{
-			position_ = xTRAMSize - 1;
-		}
-		largeDelayBuffer[largeDelayWritePos + position_] = sample; // Schreibe Sample in Delayline
-		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize; // Inkrementiere Schreibpointer (Ringbuffer)
+		position_ = std::max(0, std::min(position_, xTRAMSize - 1));
+		// Schreibe Sample in Delayline
+		largeDelayBuffer[largeDelayWritePos + position_] = sample;
+		// Inkrementiere Schreibpointer (Ringbuffer)
+		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize;
 	}
 
 	// NOT CHECKED
@@ -899,41 +897,30 @@ namespace Klangraum
 
 	inline float FX8010::readSmallDelay(int position_)
 	{
+		// Erläuterung eines Ringbuffers:
 		// Lesepointer läuft Schreibpointer hinterher!
-		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (position_ = 1)
-		// Wenn position_ > 1 müssen wir Lesepointer zurückstellen!
+		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (iTRAMSize - 1)
+		// Wenn position_ > 0 müssen wir Lesepointer zurückstellen im Gegensatz zu Schreibpointer, der vorgestellt werden muss!
 
 		// Range-Check
-		if (position_ < 0)
-		{
-			position_ = 0; // position_ muss mind. 1 sein!
-		}
-		else if (position_ > (iTRAMSize - 1))
-		{
-			position_ = iTRAMSize - 1; // position_ muss kleiner iTRAMSize sein!
-		}
+		position_ = std::max(0, std::min(position_, iTRAMSize - 1));
 		// smallDelayReadPos wird mit (iTRAMSize-1) initialisiert, welches das letzte Element ist!
-		// Mit (position_ - 1) stellen wir den Lesepointer zurück
-		float out = smallDelayBuffer[(smallDelayReadPos - position_) % iTRAMSize]; // Lese Sample aus Delayline
-		smallDelayReadPos = (smallDelayReadPos + 1) % iTRAMSize;				   // Inkrementiere Lesepointer (Ringbuffer)
+		// Mit (smallDelayReadPos - 1) stellen wir den Lesepointer zurück
+		// Lese Sample aus Delayline
+		float out = smallDelayBuffer[(smallDelayReadPos - position_) % iTRAMSize];
+		// Inkrementiere Lesepointer (Ringbuffer)
+		smallDelayReadPos = (smallDelayReadPos + 1) % iTRAMSize;
 		return out;
 	}
 
 	inline float FX8010::readLargeDelay(int position_)
 	{
 		// Range-Check
-		if (position_ < 0)
-		{
-			position_ = 0; // position_ muss mind. 1 sein!
-		}
-		else if (position_ > (xTRAMSize - 1))
-		{
-			position_ = xTRAMSize - 1; // position_ muss kleiner xTRAMSize sein!
-		}
-		// largeDelayReadPos wird mit (xTRAMSize-1) initialisiert, welches das letzte Element ist!
-		// Mit (position_ - 1) stellen wir den Lesepointer zurück
-		float out = largeDelayBuffer[(largeDelayReadPos - position_) % xTRAMSize]; // Lese Sample aus Delayline
-		largeDelayReadPos = (largeDelayReadPos + 1) % xTRAMSize;				   // Inkrementiere Lesepointer (Ringbuffer)
+		position_ = std::max(0, std::min(position_, xTRAMSize - 1));
+		// Lese Sample aus Delayline
+		float out = largeDelayBuffer[(largeDelayReadPos - position_) % xTRAMSize];
+		// Inkrementiere Lesepointer (Ringbuffer)
+		largeDelayReadPos = (largeDelayReadPos + 1) % xTRAMSize;
 		return out;
 	}
 
@@ -1010,6 +997,15 @@ namespace Klangraum
 					case MAC:
 						// R = A + X * Y
 						R.registerValue = A.registerValue + X.registerValue * Y.registerValue;
+						accumulator = R.registerValue; // Copy unsaturated value into accumulator
+						// Saturation
+						R.registerValue = saturate(R.registerValue, 1.0f);
+						// Set CCR register based on R
+						setCCR(R.registerValue);
+						break;
+					case MACN:
+						// R = A - X * Y
+						R.registerValue = A.registerValue - X.registerValue * Y.registerValue;
 						accumulator = R.registerValue; // Copy unsaturated value into accumulator
 						// Saturation
 						R.registerValue = saturate(R.registerValue, 1.0f);

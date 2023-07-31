@@ -1,23 +1,22 @@
-; Deklarationen
+; Metadaten (noch nicht implementiert)
+
+; Deklarationen/Definitionen
 static a ; Kommentar
-static b
-TEMP c = 0.77
 itramsize 100
-xtramsize 1000
-input in_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
-;input in_r = 1
+input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
 control volume = 0.5
 control pan = 0.5
-control filter = 0
-output out_l = 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
-;output out_r = 1
+control filter_cutoff = 0.1
+output out_l = 0 
 static rd
 static wr
-;static wr
 
-; LOG
-LOG a, in_l, 3, 0
-MAC out_l, 0, a, 1.0
+; Slidertest
+;MAC out_l, 0, in_l, volume
+
+; LOG (Vacuum Tube Transferfunktion)
+;LOG a, in_l, 3, 0
+;MAC out_l, 0, a, 1.0
 
 ; EXP
 ;EXP a, in_l, 7, 0
@@ -29,10 +28,20 @@ MAC out_l, 0, a, 1.0
 ; idelay read, rd, at, 17; max. read index (tramsize-1) !
 ; MAC out_l, in_l, rd, 0.5
 
-;INTERP a, -0.25, filter, 0.25
+; Lineare Interpolation
+;INTERP out_l, -0.25, pan, 0.25
 
+; 1-Pol Tiefpassfilter
+;INTERP out_l, out_l, filter_cutoff, in_l
+
+; 1-Pol Hochpassfilter
+interp a, a, filter_cutoff, in_l 
+macn out_l, in_l, a, 1 
+
+; Bedingter Sprung (siehe Sourcecode)
 ;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
 
-;andxor a, 1, 1, 0 ;
+; Logische Operationen (siehe Sourcecode)
+;ANDXOR a, 1, 1, 0 ;
 
 end

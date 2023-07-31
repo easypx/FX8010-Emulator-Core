@@ -66,7 +66,8 @@ namespace Klangraum
         // Enum for FX8010 opcodes
         enum Opcode
         {
-            MAC,
+            MAC = 0,
+            MACN,
             MACINT,
             MACINTW,
             ACC3,
@@ -89,6 +90,7 @@ namespace Klangraum
         // This Map holds Key/Value pairs to assign instructions(strings) to Opcode(enum/int)
         std::map<std::string, Opcode> opcodeMap = {
             {"mac", MAC},
+            {"macn", MAC},
             {"macint", MACINT},
             {"macintw", MACINTW},
             {"acc3", ACC3},
@@ -110,7 +112,7 @@ namespace Klangraum
         // Enum for FX8010 register types
         enum RegisterType
         {
-            STATIC,
+            STATIC = 0,
             TEMP,
             CONTROL,
             INPUT,

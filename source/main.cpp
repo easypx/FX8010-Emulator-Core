@@ -5,8 +5,8 @@
 
 using namespace Klangraum;
 
-#define SINOID_TEST 1
-#define BIPOLAR_RAMP_TEST 0
+#define SINOID_TEST 0
+#define BIPOLAR_RAMP_TEST 1
 #define UNIPOLAR_RAMP_TEST 0
 #define DC_TEST 0
 #define DIRAC_TEST 0
@@ -17,8 +17,6 @@ int main()
     // Anzahl der Channels fuer Stereo
     int numChannels = 1;
 
-    // Create an instance of FX8010 class
-    // Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
     // Erzeugung eines std::unique_ptr für die Instanz
     std::unique_ptr<Klangraum::FX8010> fx8010 = std::make_unique<Klangraum::FX8010>(numChannels);
 
@@ -103,7 +101,7 @@ int main()
         outputBuffer.resize(numChannels, 0.0);
 
         // 4 virtuelle Sliderwerte
-        std::vector<float> sliderValues = {0.25, 0.5, 0.25, 0.1};
+        std::vector<float> sliderValues = {0.1, 0.25, 0.5, 1.0};
 
         // Vergleich mit Null mit einer kleinen Toleranz
         double tolerance = 1e-4;
@@ -122,7 +120,8 @@ int main()
 
                 if (i % 8 == 0)
                 {
-                    fx8010->setRegisterValue("volume", sliderValues[i / 8]);
+                    // Hier wird das Label zum DSP Control-Typ bzw. Slider genutzt, um Register im DSP zu aendern
+                    fx8010->setRegisterValue("filter_cutoff", sliderValues[i / 8]);
                 }
             }
 
@@ -136,20 +135,20 @@ int main()
                 }
             }
 
-            // AC-Testsample BIPOLAR_RAMP
+            // AC-Testsample BIPOLAR_RAMP zum Testen von LOG, EXP
             //----------------------------------------------------------------
-            if (BIPOLAR_RAMP_TEST)
+            else if (BIPOLAR_RAMP_TEST)
             {
 
                 for (int j = 0; j < numChannels; j++)
                 {
-                    inputBuffer[j] = bipolarRamp[i]; // AC-Testsample
+                    inputBuffer[j] = bipolarRamp[i]/2.0; // AC-Testsample
                 }
             }
 
-            // AC-Testsample UNIPOLAR_RAMP
+            // AC-Testsample UNIPOLAR_RAMP zum Testen von INTERP
             //----------------------------------------------------------------
-            if (UNIPOLAR_RAMP_TEST)
+            else if (UNIPOLAR_RAMP_TEST)
             {
 
                 for (int j = 0; j < numChannels; j++)
@@ -158,9 +157,9 @@ int main()
                 }
             }
 
-            // DC-Testvalue
+            // DC-Testvalue zum Testen des virtuellen Sliderinputs
             //----------------------------------------------------------------
-            if (DC_TEST)
+            else if (DC_TEST)
             {
 
                 for (int j = 0; j < numChannels; j++)
@@ -169,9 +168,9 @@ int main()
                 }
             }
 
-            // Dirac-Impuls
+            // Dirac-Impuls zum Testen der Delayline
             //----------------------------------------------------------------
-            if (DIRAC_TEST)
+            else if (DIRAC_TEST)
             {
 
                 for (int j = 0; j < numChannels; j++)
@@ -184,18 +183,14 @@ int main()
             outputBuffer = fx8010->process(inputBuffer);
 
             // DSP Output anzeigen
-            // NOTE: Anzeige beeinflusst Zeitmessung stark!
+            // NOTE: Anzeige beeinflusst Zeitmessung stark! Fuer aussagekraeftige Zeitmessung DEBUG und PRINT_REGISTERS auf 0 setzen!
             if (DEBUG)
             {
-                // cout << "Sample: " << std::setw(3) << i << " | "
-                //      << "Input (0): " << std::setw(12) << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << " | ";
-                // cout << "Output (0): " << std::setw(12) << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
-                //  cout << "Input (1): " << ((std::abs(inputBuffer[1]) < tolerance) ? 0.0 : inputBuffer[1]) << " | ";
-                //  cout << "Output (1): " << ((std::abs(outputBuffer[1]) < tolerance) ? 0.0 : outputBuffer[1]) << endl;
-
                 // CSV Output, kann direkt in https://www.desmos.com/ genutzt werden
-                // NOTE: Desmos zeigt sehr kleine Werte falsch an! Siehe "tolerance" Variable
-                cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                // NOTE: Desmos zeigt sehr kleine Werte falsch an!
+                // Deshalb runden wir auf 0, wenn tolerance = 1e-4 unterschritten wird!
+                cout << ((std::abs(bipolarRamp[i]) < tolerance) ? 0.0 : bipolarRamp[i]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                //cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
             }
         }
 
@@ -214,7 +209,7 @@ int main()
         }
 
         // Beliebigen Registerwert anzeigen
-        // NOTE: Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
+        // NOTE: Hier wird (noch) Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
         string testRegister = "c";
         float value = fx8010->getRegisterValue(testRegister);
         cout << "Registerwert fuer '" << testRegister << "': " << value << endl;
@@ -234,8 +229,5 @@ int main()
             cout << element.errorDescription << " (" << element.errorRow << ")" << endl;
         }
     }
-cleanUp:
-    // delete fx8010;
-
     return 0;
 }
