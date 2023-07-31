@@ -5,8 +5,9 @@ The goal is to emulate a powerful interpreter for DSP assembler instructions wit
 DSP environment based on the FX8010 architecture, which was found on Soundblaster Live!
 and Audigy cards, as VST effect plugin. 
 
-The core functionality is given, but not unit tested. Syntax checker, register &
-instructions mapper and VST integration still need to be done.
+The core functionality is given, but partially unit tested. Syntax checker, register &
+instructions mapper is done. Instructions, given in the testcode.da, 
+should work. VST integration still needs to be tested. 
 
 My testing has shown that the optimized release build actually can run 200 instructions / us (200 MIPS) on a single core. 
 Interestingly, in this implementation state the hardware DSP has been surpassed 2X (100 MIPS) on a i5/3.2GHz.
