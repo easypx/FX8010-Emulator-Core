@@ -30,7 +30,7 @@ output out_l = 0
 static rd
 static wr
 
-LOG (Vacuum Tube Transferfunktion)
+; LOG (Vacuum Tube Transferfunktion)
 LOG a, in_l, 3, 0
 MAC out_l, 0, a, 1.0
 
