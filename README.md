@@ -20,6 +20,32 @@ Usage:
 - Not all instructions are tested, but should not crash
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions
 
+```cpp
+static a
+itramsize 100
+input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-Driver! 0 - Links, 1 - Rechts
+control volume = 0.5
+control filter_cutoff = 0.1
+output out_l = 0 
+static rd
+static wr
+
+LOG (Vacuum Tube Transferfunktion)
+LOG a, in_l, 3, 0
+MAC out_l, 0, a, 1.0
+
+; Delayline mit Feedback
+; mac a, in_l, rd, 0.1
+; idelay write, a, at, 0
+; idelay read, rd, at, 17; max. read index (tramsize-1) !
+; MAC out_l, in_l, rd, 0.5
+
+; 1-Pol Tiefpassfilter
+; INTERP out_l, out_l, filter_cutoff, in_l
+
+end
+```
+
 [3rd Party Docs/FX8010 - A DSP Chip Architecture for Audio Effects (1998).pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf)
 
 [A Beginner's Guide to DSP Programming.pdf](https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf)
