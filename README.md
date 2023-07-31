@@ -17,7 +17,7 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 Usage:  
 - For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
 - Not all instructions are tested, but should not crash.
-- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be adapted)
+- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be constantly adapted)
 
 ```cpp
 static a
