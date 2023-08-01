@@ -18,18 +18,15 @@ namespace Klangraum
 
 	void FX8010::initialize()
 	{
-		if (DEBUG)
-			printLine(80);
+		printLine(80);
 
-		if (DEBUG)
-			cout << "Initialisiere den DSP..." << endl;
+		cout << "Initialisiere den DSP..." << endl;
 
 		// Erstelle Fehler-Map
 		//--------------------------------------------------------------------------------
-		if (DEBUG)
-			cout << "Erstelle die Fehler-Map" << endl;
+		cout << "Erstelle die Fehler-Map" << endl;
 		errorMap[ERROR_NONE] = "Kein Fehler";
-		errorMap[ERROR_INVALID_INPUT] = "Ungültige Eingabe";
+		errorMap[ERROR_INVALID_INPUT] = "Ungueltige Eingabe";
 		errorMap[ERROR_DIVISION_BY_ZERO] = "Division durch Null";
 		errorMap[ERROR_MULTIPLE_VAR_DECLARE] = "Mehrfache Variablendeklaration";
 		errorMap[ERROR_VAR_NOT_DECLARED] = "Variable nicht deklariert";
@@ -51,8 +48,7 @@ namespace Klangraum
 		//--------------------------------------------------------------------------------
 		// Lege CCR Register an. Wir nutzen es wie ein GPR.
 		// NOTE: Map wäre in Zukunft besser, um GPR oder Instruktion über Stringlabel zu identifizieren.
-		if (DEBUG)
-			cout << "Lege Spezialregister an (CCR, READ, WRTIE, AT)" << endl;
+		cout << "Lege Spezialregister an (CCR, READ, WRTIE, AT)" << endl;
 
 		registers.push_back({CCR, "ccr", 0, 0}); // GPR Index 0
 
@@ -65,8 +61,7 @@ namespace Klangraum
 		//--------------------------------------------------------------------------------
 		// Schar von Lookup Tables in einem Vector
 		// TODO(Klangraum): sign
-		if (DEBUG)
-			cout << "Erzeuge LOG, EXP Lookuptables" << endl;
+		cout << "Erzeuge LOG, EXP Lookuptables" << endl;
 
 		int numExponent = 32;
 		int numEntries = 32;
@@ -119,17 +114,17 @@ namespace Klangraum
 		// Speicherallokation nicht ganz klar. Dauert resize() zu lange?
 		// Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor.
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
-		if (DEBUG)
-			cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
+		// if (DEBUG)
+		//	cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
 		// smallDelayBuffer.reserve(MAX_IDELAY_SIZE); // 100ms max. Gesamtgroesse
 		// largeDelayBuffer.reserve(MAX_XDELAY_SIZE); // 1s max. Gesamtgroesse
 
 		// I/O Buffers initialisieren?
 		// Initialisiere Outputbuffer
-		outputBuffer.resize(numChannels);
+		cout << "Initialisiere Outputbuffer" << endl;
+		outputBuffer.resize(numChannels, 0.0);
 
-		if (DEBUG)
-			printLine(80);
+		printLine(80);
 	}
 
 	// CHECKED

@@ -24,14 +24,13 @@ int main()
     if (fx8010->loadFile("testcode.da"))
     {
         // Diese Liste mit Controlregistern wird VST als Label-Identifizierer fuer Slider, Knobs, usw. nutzen koennen.
-        vector<string> controlRegistersLabel = fx8010->getControlRegisters();
         cout << "Controlregisters: " << endl;
-        for (const auto &element : controlRegistersLabel) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
+        for (const auto &element : fx8010->getControlRegisters()) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
         {
             cout << element << endl;
         }
 
-        printLine(80);
+        //std::cout << endl;
 
         // Erzeugung des Vektors mit 32 float-Werten
         std::vector<float> sinoid;
@@ -208,7 +207,7 @@ int main()
             }
         }
 
-        printLine(80);
+        std::cout << endl;
 
         // if (!(DEBUG || PRINT_REGISTERS))
         {
@@ -226,7 +225,7 @@ int main()
                 cout << "ACHTUNG: Diese Werte sind viel groesser als die tatsaechliche Ausfuehrungszeit, da DEBUG oder PRINT_REGISTERS 1 sind!" << endl;
         }
 
-        printLine(80);
+        std::cout << endl;
 
         // Beliebigen Registerwert anzeigen
         // NOTE: Hier wird (noch) Kleinschreibung verlangt, da Parser Sourcecode in Kleinbuchstaben umwandelt. (verbesserungswürdig)
@@ -234,7 +233,7 @@ int main()
         float value = fx8010->getRegisterValue(testRegister);
         cout << "Registerwert fuer '" << testRegister << "': " << value << endl;
 
-        printLine(80);
+        std::cout << endl;
 
         // Ausgabe der gespeicherten Schlüssel-Wert-Paare
         cout << "Metadaten: " << endl;
@@ -248,12 +247,8 @@ int main()
         cout << Klangraum::colorMap[Klangraum::COLOR_BLUE] << "Es ist ein Fehler aufgetreten. Abbruch." << Klangraum::colorMap[Klangraum::COLOR_NULL] << endl;
 
         // Zeige Fehlerliste an
-        vector<Klangraum::FX8010::MyError> errorList;
-        errorList.clear();
-        errorList = fx8010->getErrorList();
-
         cout << "Fehlerliste: " << endl;
-        for (const auto &element : errorList) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
+        for (const auto &element : fx8010->getErrorList()) // const auto &element bedeutet, dass keine Änderungen an element vorgenommen werden koennen
         {
             cout << element.errorDescription << " (" << element.errorRow << ")" << endl;
         }
