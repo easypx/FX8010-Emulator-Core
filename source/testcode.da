@@ -38,7 +38,7 @@ static noise ; Pseudo Random Number Generator
 ;macs out_l, in_l, rd, 0.5
 
 ; Lineare Interpolation
-;interp out_l, -0.25, pan, 0.25
+;interp out_l, -0.5, pan, 0.5
 
 ; 1-Pol Tiefpassfilter
 ;interp out_l, out_l, filter_cutoff, in_l
