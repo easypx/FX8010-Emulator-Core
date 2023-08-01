@@ -18,7 +18,7 @@ Usage:
 - For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
 - Not all instructions are tested, but should not crash.
 - Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, like input/output.
-- Read-/Writeadresses of delaylines can be used simple by its indexes. (for now no 11 Bit shift/not testet)
+- Read-/Writeadresses of delaylines can be modified simply by its indexes. (for now no 11 Bit shift/not testet)
 
 ```cpp
 static a
