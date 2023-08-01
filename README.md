@@ -31,17 +31,17 @@ static rd
 static wr
 
 ; LOG (Vacuum Tube Transferfunktion)
-LOG a, in_l, 3, 0
-MAC out_l, 0, a, 1.0
+log a, in_l, 3, 0
+macs out_l, 0, a, 1.0
 
 ; Delayline mit Feedback
-; mac a, in_l, rd, 0.1
+; macs a, in_l, rd, 0.1
 ; idelay write, a, at, 0
 ; idelay read, rd, at, 17; max. read index (tramsize-1) !
-; MAC out_l, in_l, rd, 0.5
+; macs out_l, in_l, rd, 0.5
 
 ; 1-Pol Tiefpassfilter
-; INTERP out_l, out_l, filter_cutoff, in_l
+; interp out_l, out_l, filter_cutoff, in_l
 
 end
 ```
