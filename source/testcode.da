@@ -48,7 +48,7 @@ static noise ; Pseudo Random Number Generator
 ;macsn out_l, in_l, a, 1 
 
 ; Bedingter Sprung (siehe Sourcecode)
-;skip ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
+;skip ccr, ccr, 0x8, 1 ; testet auf 0
 
 ; Logische Operationen (siehe Sourcecode)
 ;andxor a, 1, 1, 0 ;
