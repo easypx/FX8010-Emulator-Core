@@ -213,7 +213,6 @@ namespace Klangraum
 	// Bit 5: Saturation, Bit 4: Zero, Bit 3: Negative, Bit 2: Normalized, Bit 1: Borrow
 	inline void FX8010::setCCR(const float result)
 	{
-		int ccrOld = registers[0].registerValue;
 		if (result == 0)
 			registers[0].registerValue = 0b01000; // Zero
 		else if (result < 0 && result > -1.0)
@@ -225,7 +224,7 @@ namespace Klangraum
 		else if (result == -1.0)
 			registers[0].registerValue = 0b10100; // Negative Saturation
 		// Borrow, Vergleich mit letztem CCR-Wert?
-		else if (registers[0].registerValue == ccrOld)
+		else if (result == registers[0].registerValue)
 			registers[0].registerValue = 0b00001 | static_cast<int>(registers[0].registerValue);
 	}
 
@@ -487,7 +486,7 @@ namespace Klangraum
 			const std::string keyword = match[1];
 			const std::string tramSize = match[2];
 			if (keyword == "itramsize")
-			{				
+			{
 				if (iTRAMSize > MAX_IDELAY_SIZE)
 				{
 					if (DEBUG)
@@ -506,7 +505,7 @@ namespace Klangraum
 				}
 			}
 			else if (keyword == "xtramsize")
-			{				
+			{
 				if (xTRAMSize > MAX_XDELAY_SIZE)
 				{
 					if (DEBUG)
@@ -1124,9 +1123,9 @@ namespace Klangraum
 						break;
 					case TSTNEG:
 						// TODO: Check
-						// Funktioniert nur mit Integern, da bitweise Operation Complement ~
-						// R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : ~X.registerValue;
-						// accumulator = R.registerValue;
+						//Funktioniert nur mit Integern, da bitweise Operation Complement ~
+						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : static_cast<float>(~static_cast<int>(X.registerValue));
+						accumulator = R.registerValue;
 						break;
 					case LIMIT:
 						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue;

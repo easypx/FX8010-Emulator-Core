@@ -113,7 +113,8 @@ int main()
         // Vorbereitung der CSV Ausgabe
         if (DEBUG)
         {
-            cout << "CSV Output, kann direkt in https://www.desmos.com/ genutzt werden:" << endl;
+            cout << "CSV Output kann direkt in https://www.desmos.com/ genutzt werden:" << endl;
+            cout << endl;
         }
 
         // Call the process() method to execute the instructions
