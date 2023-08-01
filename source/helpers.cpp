@@ -41,6 +41,20 @@ namespace Klangraum
         std::cout << line << std::endl;
     }
 
+    // Funktion zum Umwandeln von 32-Bit-Integer in Float
+    float intToFloat(int32_t intValue)
+    {
+        // 32-Bit-Integer in 32-Bit-Float umwandeln
+        return static_cast<float>(intValue) / static_cast<float>(INT32_MAX);
+    }
+
+    // Funktion zum Umwandeln von Float in 32-Bit-Integer
+    int32_t floatToInt(float floatValue)
+    {
+        // Float in 32-Bit-Integer umwandeln
+        return static_cast<int32_t>(floatValue * static_cast<float>(INT32_MAX));
+    }
+
     // Wandle alle Elemente in Kleinbuchstaben um
     // NOTE: tolower() ist Lambda Funktion in transform()
     /*	std::transform(lines.begin(), lines.end(), lines.begin(), [](std::string str)

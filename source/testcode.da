@@ -38,7 +38,7 @@ static noise ; Pseudo Random Number Generator
 ;macs out_l, in_l, rd, 0.5
 
 ; Lineare Interpolation
-;interp out_l, -0.5, pan, 0.5
+;interp out_l, -0.25, pan, 0.25
 
 ; 1-Pol Tiefpassfilter
 ;interp out_l, out_l, filter_cutoff, in_l
@@ -48,7 +48,7 @@ static noise ; Pseudo Random Number Generator
 ;macsn out_l, in_l, a, 1 
 
 ; Bedingter Sprung (siehe Sourcecode)
-;skip ccr, ccr, 0x8, 1 ; testet auf 0
+;skip ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
 
 ; Logische Operationen (siehe Sourcecode)
 ;andxor a, 1, 1, 0 ;

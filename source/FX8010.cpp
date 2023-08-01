@@ -1123,9 +1123,11 @@ namespace Klangraum
 						break;
 					case TSTNEG:
 						// TODO: Check
-						//Funktioniert nur mit Integern, da bitweise Operation Complement ~
-						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : static_cast<float>(~static_cast<int>(X.registerValue));
+						// Komplement ~ Funktioniert nur mit Integern, deswegen in einfache Binärdarstellung umwandeln
+						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : intToFloat(~floatToInt(X.registerValue));
 						accumulator = R.registerValue;
+						// Set CCR register based on R
+						setCCR(R.registerValue);
 						break;
 					case LIMIT:
 						R.registerValue = A.registerValue >= Y.registerValue ? X.registerValue : Y.registerValue;
