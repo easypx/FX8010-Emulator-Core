@@ -37,7 +37,7 @@ namespace Klangraum
 		errorMap[ERROR_ITRAMSIZE_TO_LARGE] = "iTRAM Size ausserhalb des gueltigen Bereichs (max. " + std::to_string(MAX_IDELAY_SIZE) + ")";
 		errorMap[ERROR_XTRAMSIZE_TO_LARGE] = "xRAM Size ausserhalb des gueltigen Bereichs (max. " + std::to_string(MAX_XDELAY_SIZE) + ")";
 
-		// Initialisieren
+		// Liste mit Fehlern initialisieren
 		errorList.clear();
 
 		// First error is no error
@@ -487,12 +487,11 @@ namespace Klangraum
 			const std::string keyword = match[1];
 			const std::string tramSize = match[2];
 			if (keyword == "itramsize")
-			{
-				iTRAMSize = stoi(tramSize);
-				if (iTRAMSize > 4800)
+			{				
+				if (iTRAMSize > MAX_IDELAY_SIZE)
 				{
 					if (DEBUG)
-						cout << "iTRAMSize zu gross (max. 4800)" << endl;
+						cout << "iTRAMSize zu gross (max. " << MAX_IDELAY_SIZE << ")" << endl;
 					error.errorDescription = errorMap[ERROR_ITRAMSIZE_TO_LARGE];
 					error.errorRow = errorCounter;
 					errorList.push_back(error);
@@ -500,19 +499,18 @@ namespace Klangraum
 				}
 				else
 				{
-					// Größe des Delayline Vectors anpassen und initialisieren
-					// smallDelayBuffer.resize(4800, 0.0);
+					// Größe der Delayline anpassen
+					iTRAMSize = stoi(tramSize);
 					if (DEBUG)
 						cout << "iTRAMSize: " << iTRAMSize << endl;
 				}
 			}
 			else if (keyword == "xtramsize")
-			{
-				xTRAMSize = stoi(tramSize);
-				if (xTRAMSize > 48000)
+			{				
+				if (xTRAMSize > MAX_XDELAY_SIZE)
 				{
 					if (DEBUG)
-						cout << "xTRAMSize zu gross (max. 48000)" << endl;
+						cout << "xTRAMSize zu gross (max. " << MAX_XDELAY_SIZE << ")" << endl;
 					error.errorDescription = errorMap[ERROR_XTRAMSIZE_TO_LARGE];
 					error.errorRow = errorCounter;
 					errorList.push_back(error);
@@ -520,8 +518,8 @@ namespace Klangraum
 				}
 				else
 				{
-					// Größe des Delayline Vectors anpassen
-					// largeDelayBuffer.resize(xTRAMSize, 0.0);
+					// Größe der Delayline anpassen
+					xTRAMSize = stoi(tramSize);
 					if (DEBUG)
 						cout << "xTRAMSize: " << xTRAMSize << endl;
 				}
