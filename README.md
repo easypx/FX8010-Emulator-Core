@@ -17,7 +17,7 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 Usage:  
 - For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
 - Not all instructions are 100 % tested, but should not crash. 
-- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, like INPUT/OUTPUT and don't know...
+- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, like INPUT/OUTPUT and delay address operation.
 - Read-/Writeadresses of delaylines can be modified simply by its indexes. (for now no 11 Bit shift/not testet)
 
 ```cpp
