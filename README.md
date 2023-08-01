@@ -16,8 +16,9 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 
 Usage:  
 - For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
-- Not all instructions are tested, but should not crash.
-- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be constantly adapted)
+- Not all instructions are 100 % tested, but should not crash. TSTNEG is outcommented for now.
+- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, like INPUT/OUTPUT.
+- Read-/Writeadresses of delaylines can be modified simply by its indexes. (for now no 11 Bit shift/not testet)
 
 ```cpp
 static a
@@ -25,22 +26,22 @@ itramsize 100
 input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-DSP! 0 - Links, 1 - Rechts
 control volume = 0.5
 control filter_cutoff = 0.1
-output out_l = 0 
+output out_l 0 
 static rd
 static wr
 
 ; LOG (Vacuum Tube Transferfunktion)
-LOG a, in_l, 3, 0
-MAC out_l, 0, a, 1.0
+log a, in_l, 3, 0
+macs out_l, 0, a, 1.0
 
 ; Delayline mit Feedback
-; mac a, in_l, rd, 0.1
+; macs a, in_l, rd, 0.1
 ; idelay write, a, at, 0
 ; idelay read, rd, at, 17; max. read index (tramsize-1) !
-; MAC out_l, in_l, rd, 0.5
+; macs out_l, in_l, rd, 0.5
 
 ; 1-Pol Tiefpassfilter
-; INTERP out_l, out_l, filter_cutoff, in_l
+; interp out_l, out_l, filter_cutoff, in_l
 
 end
 ```
@@ -51,4 +52,6 @@ end
 
 ![EMU10K1](https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/EMU10K1-SEFbySpc.jpg/615px-EMU10K1-SEFbySpc.jpg)
 
-2023 / klangraum
+https://sites.google.com/site/kxmodular
+
+2023 / Klangraum
