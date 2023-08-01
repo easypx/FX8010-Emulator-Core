@@ -44,7 +44,7 @@ namespace Klangraum
     class FX8010
     {
     public:
-        FX8010(int numChannels);
+        FX8010(int32_t numChannels);
         ~FX8010();
 
         // Method to initialize lookup tables and other initialization tasks
@@ -53,16 +53,16 @@ namespace Klangraum
         std::vector<float> process(const std::vector<float> &inputSamples);
 
         // Gibt Anzahl der ausgeführten Instructions zurück
-        int getInstructionCounter();
+        int32_t getInstructionCounter();
         // Sourcecode laden
         bool loadFile(const string &path);
         struct MyError // Vorwärtsdeklaration notwendig!
         {
             std::string errorDescription = "";
-            int errorRow = 1;
+            int32_t errorRow = 1;
         };
         std::vector<FX8010::MyError> getErrorList();
-        int setRegisterValue(const std::string &key, float value);
+        int32_t setRegisterValue(const std::string &key, float value);
         float getRegisterValue(const std::string &key);
         vector<string> getControlRegisters();
         std::unordered_map<std::string, std::string> getMetaMap();
@@ -153,16 +153,16 @@ namespace Klangraum
 
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
-        int instructionCounter = 0;
+        int32_t instructionCounter = 0;
         std::vector<float> outputBuffer;
 
         // GPR - General Purpose Register
         struct GPR
         {
-            int registerType = 0;          // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
+            int32_t registerType = 0;          // Typ des Registers (z.B. STATIC, TEMP, CONTROL, INPUT_, OUTPUT_)
             std::string registerName = ""; // Name des Registers
             float registerValue = 0;       // Wert des Registers
-            int IOIndex = 0;               // 0 - Links, 1 - Rechts
+            int32_t IOIndex = 0;               // 0 - Links, 1 - Rechts
             bool isBorrow = false;         // fuer CCR, Was tut das?
         };
 
@@ -172,11 +172,11 @@ namespace Klangraum
         // Struct, die eine Instruktion repraesentiert
         struct Instruction
         {
-            int opcode = 0;        // Opcode-Nummer
-            int operand1 = 0;      // R (Index des GPR in Vektor "registers")
-            int operand2 = 0;      // A (Index des GPR in Vektor "registers")
-            int operand3 = 0;      // X (Index des GPR in Vektor "registers")
-            int operand4 = 0;      // Y (Index des GPR in Vektor "registers")
+            int32_t opcode = 0;        // Opcode-Nummer
+            int32_t operand1 = 0;      // R (Index des GPR in Vektor "registers")
+            int32_t operand2 = 0;      // A (Index des GPR in Vektor "registers")
+            int32_t operand3 = 0;      // X (Index des GPR in Vektor "registers")
+            int32_t operand4 = 0;      // Y (Index des GPR in Vektor "registers")
             bool hasInput = false; // um nicht alle Instructions auf INPUT testen zu muessen
             // hasOutput nicht sinnvoll, Doppelcheck (Instruktion und R)
             bool hasOutput = false; // um nicht alle Instructions auf OUTPUT testen zu muessen
@@ -194,8 +194,8 @@ namespace Klangraum
         //----------------------------------------------------------------
 
         // Angeforderte Delayline Groesse
-        int iTRAMSize = 0;
-        int xTRAMSize = 0;
+        int32_t iTRAMSize = 0;
+        int32_t xTRAMSize = 0;
 
         // Create a circular buffer for each delay line. You can use a std::vector to represent the buffer.
         // std::vector<float> smallDelayBuffer; // ATTENTION: Vektoren scheinen trotz reserve() und resize() Probleme mit zufaelligen Werten zu machen!
@@ -204,15 +204,15 @@ namespace Klangraum
         float largeDelayBuffer[MAX_XDELAY_SIZE];
 
         // Schreib-/Lesepointer
-        int smallDelayWritePos = 0;
-        int smallDelayReadPos = 0;
+        int32_t smallDelayWritePos = 0;
+        int32_t smallDelayReadPos = 0;
 
-        int largeDelayWritePos = 0;
-        int largeDelayReadPos = 0;
+        int32_t largeDelayWritePos = 0;
+        int32_t largeDelayReadPos = 0;
 
         // CCR Register
         inline void setCCR(const float result);
-        inline int getCCR();
+        inline int32_t getCCR();
 
         // 32Bit Saturation
         inline float saturate(const float input, const float threshold);
@@ -220,32 +220,32 @@ namespace Klangraum
         // Lineare Interpolation mit Lookup-Table
         inline double linearInterpolate(double x, const std::vector<double> &lookupTable, double x_min, double x_max);
 
-        // MACINTW ...
+        // MACINTW
         inline float wrapAround(const float a);
 
         // ANDXOR Instruction
-        inline int logicOps(const GPR &A, const GPR &X_, const GPR &Y_);
+        inline int32_t logicOps(const GPR &A, const GPR &X_, const GPR &Y_);
 
         // TRAM Engine
-        inline void setSmallDelayWritePos(int smallDelayWritePos); //?
-        inline void setLargeDelayWritePos(int largeDelayWritePos); //?
+        inline void setSmallDelayWritePos(int32_t smallDelayWritePos); //?
+        inline void setLargeDelayWritePos(int32_t largeDelayWritePos); //?
 
-        inline float readSmallDelay(int position);
-        inline float readLargeDelay(int position);
-        inline void writeSmallDelay(float sample, int position_);
-        inline void writeLargeDelay(float sample, int position_);
+        inline float readSmallDelay(int32_t position);
+        inline float readLargeDelay(int32_t position);
+        inline void writeSmallDelay(float sample, int32_t position_);
+        inline void writeLargeDelay(float sample, int32_t position_);
 
         // Debug Registers
-        void printRegisters(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
+        void printRegisters(const int32_t instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
 
         // Syntax Check
         bool syntaxCheck(const std::string &input);
 
         // GPR-Index zurückgeben
-        int findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name);
+        int32_t findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name);
 
         // Map registernames from sourcecode instruction to register indexes
-        int mapRegisterToIndex(const string &registerName);
+        int32_t mapRegisterToIndex(const string &registerName);
 
         // Definiere die Fehlercodes
         enum ErrorCode
@@ -264,18 +264,18 @@ namespace Klangraum
             // Weitere Fehlercodes hier...
         };
 
-        std::map<int, std::string> errorMap;
+        std::map<int32_t, std::string> errorMap;
         MyError error;
         vector<MyError> errorList;
-        int errorCounter = 1;
+        int32_t errorCounter = 1;
 
-        std::vector<double> createLogLookupTable(double x_min, double x_max, int numEntries, int exponent);
-        std::vector<double> createExpLookupTable(double x_min, double x_max, int numEntries, int exponent);
+        std::vector<double> createLogLookupTable(double x_min, double x_max, int32_t numEntries, int32_t exponent);
+        std::vector<double> createExpLookupTable(double x_min, double x_max, int32_t numEntries, int32_t exponent);
         std::vector<double> mirrorYVector(const std::vector<double> &inputVector);
         std::vector<double> concatenateVectors(const std::vector<double> &vector1, const std::vector<double> &vector2);
         std::vector<double> negateVector(const std::vector<double> &inputVector);
 
-        int numChannels;
+        int32_t numChannels;
 
         vector<string> controlRegisters;
 
@@ -286,8 +286,8 @@ namespace Klangraum
         // https://www.musicdsp.org/en/latest/Synthesis/216-fast-whitenoise-generator.html
         float g_fScale = 2.0f / 0xffffffff;
         // Seeds
-        int g_x1 = 0x70f4f854;
-        int g_x2 = 0xe1e9f0a7;
+        int32_t g_x1 = 0x70f4f854;
+        int32_t g_x2 = 0xe1e9f0a7;
         float FX8010::whitenoise();
 
         // Map mit Metadaten
