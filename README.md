@@ -17,7 +17,8 @@ A special shout out to ChatGPT which provides an excellent assistant and talks a
 Usage:  
 - For console debug output change DEBUG and PRINT_REGISTERS and other defines. (You will find them.)
 - Not all instructions are tested, but should not crash.
-- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, such as MAC/MACS, INPUT/OUTPUT or the delaylines. (will be constantly adapted)
+- Sourcecode syntax is same as DANE (KX-Project, 2. Link below) with a few exceptions, like input/output.
+- Read-/Writeadresses of delaylines can be used simple by its indexes. (for now no 11 Bit shift/not testet)
 
 ```cpp
 static a
@@ -25,7 +26,7 @@ itramsize 100
 input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-DSP! 0 - Links, 1 - Rechts
 control volume = 0.5
 control filter_cutoff = 0.1
-output out_l = 0 
+output out_l 0 
 static rd
 static wr
 
