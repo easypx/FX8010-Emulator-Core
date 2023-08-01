@@ -203,10 +203,12 @@ int main()
                 // cout << ((std::abs(inputBuffer[0]) < tolerance) ? 0.0 : inputBuffer[0]) << "," << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
                 // White Noise
                 // cout << ((std::abs(outputBuffer[0]) < tolerance) ? 0.0 : outputBuffer[0]) << endl;
+                // std::cout << "(" << testSample[i] << " , " << operand1Register.registerValue << ")" << std::endl; // CVS Daten in Console (als punktfolge für https://www.desmos.com/)
+                // data.push_back({ std::to_string(testSample[i]) , std::to_string(R) }); // CVS Daten in Vector zum speichern
             }
         }
 
-        if (!(DEBUG || PRINT_REGISTERS))
+        // if (!(DEBUG || PRINT_REGISTERS))
         {
             // Endzeitpunkt speichern
             auto endTime = std::chrono::high_resolution_clock::now();

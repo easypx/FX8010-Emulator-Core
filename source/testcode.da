@@ -10,42 +10,42 @@ control filter_cutoff = 0.1
 output out_l = 0 
 static rd
 static wr
-noise noise_
+static noise
 
-; Slidertest
-;MAC out_l, 0, in_l, volume
+;Slidertest
+;macs out_l, 0, in_l, volume
 
-; LOG (Vacuum Tube Transferfunktion)
-;LOG a, in_l, 3, 0
-;MAC out_l, 0, a, 1.0
+;LOG (Vacuum Tube Transferfunktion)
+;log a, in_l, 3, 0
+;macs out_l, 0, a, 1.0
 
-; EXP
-;EXP a, in_l, 7, 0
-;MAC out_l, 0, a, 1.0
+;EXP
+;exp a, in_l, 7, 0
+;macs out_l, 0, a, 1.0
 
-; Delayline mit Feedback
-; mac a, in_l, rd, 0.1
-; idelay write, a, at, 0
-; idelay read, rd, at, 17; max. read index (tramsize-1) !
-; MAC out_l, in_l, rd, 0.5
+;Delayline mit Feedback
+macs a, in_l, rd, 0.1
+idelay write, a, at, 0
+idelay read, rd, at, 17; max. read index (tramsize-1) !
+macs out_l, in_l, rd, 0.5
 
 ; Lineare Interpolation
-;INTERP out_l, -0.25, pan, 0.25
+;interp out_l, -0.25, pan, 0.25
 
-; 1-Pol Tiefpassfilter
-;INTERP out_l, out_l, filter_cutoff, in_l
+;1-Pol Tiefpassfilter
+;interp out_l, out_l, filter_cutoff, in_l
 
-; 1-Pol Hochpassfilter
+;1-Pol Hochpassfilter
 ;interp a, a, filter_cutoff, in_l 
-;macn out_l, in_l, a, 1 
+;macsn out_l, in_l, a, 1 
 
-; Bedingter Sprung (siehe Sourcecode)
-;SKIP ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
+;Bedingter Sprung (siehe Sourcecode)
+;skip ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
 
-; Logische Operationen (siehe Sourcecode)
-;ANDXOR a, 1, 1, 0 ;
+;Logische Operationen (siehe Sourcecode)
+;andxor a, 1, 1, 0 ;
 
-; White Noise
-mac out_l, 0, noise_, 1.0
+;White Noise
+macs out_l, 0, noise, 1.0
 
 end

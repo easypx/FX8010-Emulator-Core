@@ -1,4 +1,7 @@
 // Copyright 2023 Klangraum
+// https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
+// https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/Other/AS10k1%20Manual%20(2000).pdf
+// https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf
 
 #ifndef FX8010_H
 #define FX8010_H
@@ -25,14 +28,14 @@ using namespace std;
 #pragma warning(disable : 4244 4305 4715)
 
 // Nicht alle Defines werden genutzt
-#define E 2.71828             // schön zu haben
-#define PI 3.141592           // schön zu haben
-#define SAMPLERATE 48000      // originale Samplerate des DSP
-#define AUDIOBLOCKSIZE 128    // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
-#define DEBUG 0               // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 0     // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
-#define MAX_IDELAY_SIZE 4800  // 100ms max. Gesamtgroesse
-#define MAX_XDELAY_SIZE 48000 // 1000ms max. Gesamtgroesse
+#define E 2.71828               // schön zu haben
+#define PI 3.141592             // schön zu haben
+#define SAMPLERATE 48000        // originale Samplerate des DSP
+#define AUDIOBLOCKSIZE 128      // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
+#define DEBUG 1                 // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
+#define PRINT_REGISTERS 0       // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define MAX_IDELAY_SIZE 8192    // max. Gesamtgroesse iTRAM ~170.67 ms (AS10K Manual)
+#define MAX_XDELAY_SIZE 1048576 // max. Gesamtgroesse xTRAM ~21,84s (AS10K Manual)
 
 namespace Klangraum
 {
@@ -66,38 +69,37 @@ namespace Klangraum
         // Enum for FX8010 opcodes
         enum Opcode
         {
-            MAC = 0,
-            MACN,
-            MACINT,
-            MACINTW,
-            ACC3,
-            MACMV,
-            MACW,  // only KX?
-            MACWN, // only KX?
-            SKIP,
-            ANDXOR,
-            TSTNEG,
-            LIMIT,
-            LIMITN,
-            LOG,
-            EXP,
-            INTERP,
-            END,
+            MACS = 0x0,
+            MACSN = 0x1,
+            MACW = 0x2,
+            MACWN = 0x3,
+            MACINTS = 0x4,
+            MACINTW = 0x5,
+            ACC3 = 0x6,
+            MACMV = 0x7,
+            ANDXOR = 0x8,
+            TSTNEG = 0x9,
+            LIMIT = 0xa,
+            LIMITN = 0xb,
+            LOG = 0xc,
+            EXP = 0xd,
+            INTERP = 0xe,
+            SKIP = 0xf,
             IDELAY,
-            XDELAY
+            XDELAY,
+            END
         };
 
         // This Map holds Key/Value pairs to assign instructions(strings) to Opcode(enum/int)
         std::map<std::string, Opcode> opcodeMap = {
-            {"mac", MAC},
-            {"macn", MACN},
-            {"macint", MACINT},
+            {"macs", MACS},
+            {"macsn", MACSN},
+            {"macw", MACW},
+            {"macwn", MACWN},
+            {"macints", MACINTS},
             {"macintw", MACINTW},
             {"acc3", ACC3},
             {"macmv", MACMV},
-            {"macw", MACW},   // only KX?
-            {"macwn", MACWN}, // only KX?
-            {"skip", SKIP},
             {"andxor", ANDXOR},
             {"tstneg", TSTNEG},
             {"limit", LIMIT},
@@ -105,11 +107,14 @@ namespace Klangraum
             {"log", LOG},
             {"exp", EXP},
             {"interp", INTERP},
-            {"end", END},
+            {"skip", SKIP},
             {"idelay", IDELAY},
-            {"xdelay", XDELAY}};
+            {"xdelay", XDELAY},
+            {"end", END}};
 
-        // Enum for FX8010 register types
+        // Directives are special instructions which tell the assembler to do certain things at assembly time.
+        // Diese Definitionen sind nicht ganz korrekt, siehe AS10K Manual, aber funktionieren.
+        // Enum for FX8010 Directives
         enum RegisterType
         {
             STATIC = 0,
@@ -124,7 +129,7 @@ namespace Klangraum
             WRITE,
             AT,
             CCR,
-            NOISE
+            //NOISE
         };
 
         // This Map holds Key/Value pairs to assign registertypes(strings) to RegisterType(enum/int)
@@ -141,14 +146,13 @@ namespace Klangraum
             {"write", WRITE},
             {"at", AT},
             {"ccr", CCR},
-            {"noise", NOISE}};
+            //{"noise", NOISE}
+            };
 
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
         int instructionCounter = 0;
-        int accumGuardBits = 0;     // ?
-        float inputBuffer[2] = {0}; // TODO: Stereo I/O Buffers
-        float outputBuffer[2] = {0};
+        std::vector<float> outputBuffer;
 
         // GPR - General Purpose Register
         struct GPR
@@ -157,6 +161,7 @@ namespace Klangraum
             std::string registerName = ""; // Name des Registers
             float registerValue = 0;       // Wert des Registers
             int IOIndex = 0;               // 0 - Links, 1 - Rechts
+            bool isBorrow = false;         // fuer CCR, Was tut das?
         };
 
         // Vector, der die GPR enthaelt
@@ -229,7 +234,7 @@ namespace Klangraum
         inline void writeLargeDelay(float sample, int position_);
 
         // Debug Registers
-        void printRow(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
+        void printRegisters(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator);
 
         // Syntax Check
         bool syntaxCheck(const std::string &input);
