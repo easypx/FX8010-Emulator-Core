@@ -222,6 +222,8 @@ int main()
             std::cout << "Ausfuehrungszeit: " << duration << " Mikrosekunden"
                       << " fuer " << fx8010->getInstructionCounter() << " Instructions pro Audioblock (" << AUDIOBLOCKSIZE << " Samples)." << std::endl;
             cout << "Erlaubtes Zeitfenster ohne Dropouts: " << 1.0 / static_cast<float>(SAMPLERATE) * static_cast<float>(AUDIOBLOCKSIZE) * 1000000.0 << " Mikrosekunden" << endl;
+            if (DEBUG || PRINT_REGISTERS)
+                cout << "ACHTUNG: Diese Werte sind viel groesser als die tatsaechliche Ausfuehrungszeit, da DEBUG oder PRINT_REGISTERS 1 sind!" << endl;
         }
 
         printLine(80);
