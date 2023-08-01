@@ -229,9 +229,9 @@ namespace Klangraum
 			registers[0].registerValue = 0b10000; // Positive Saturation
 		else if (result == -1.0)
 			registers[0].registerValue = 0b10100; // Negative Saturation
-		// Borrow, Vergleich mit letztem CCR-Wert?	
-		else if(registers[0].registerValue == ccrOld)
-			registers[0].registerValue = 0b00001 | static_cast<int>(registers[0].registerValue); 
+		// Borrow, Vergleich mit letztem CCR-Wert?
+		else if (registers[0].registerValue == ccrOld)
+			registers[0].registerValue = 0b00001 | static_cast<int>(registers[0].registerValue);
 	}
 
 	// CHECKED
@@ -358,19 +358,19 @@ namespace Klangraum
 
 		// Deklarationen: z.B. static a || static b = 1.0
 		// std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
-		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const|noise)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
+		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
 		std::regex pattern2(R"(^\s*$)");
 
 		// tramsize im Deklarationsteil
-		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)$)");
+		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)*\s$)");
 
 		// check instructions TODO: all instructions
 		std::regex pattern4(R"(^\s*(macs|macsn|macints|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*$)");
 
 		// check metadata TODO: ...
-		std::regex pattern5(R"(^\s*(comment|name|guid)\s+([a-zA-Z0-9_]+)\s*,\s*([a-zA-Z0-9_.]+)\s*$)");
+		std::regex pattern5(R"(\s*(name|copyright|created|engine|comment|guid)\s+\"([^\"]+)\")");
 
 		// Check "END"
 		std::regex pattern6(R"(^\s*(end)\s*$)");
@@ -686,6 +686,19 @@ namespace Klangraum
 			return true;
 		}
 
+		// Teste auf Metadaten
+		//------------------------------------------------------------------------------------------
+		else if (std::regex_match(input, match, pattern5))
+		{
+			// Extrahiere aus Regex-Erfassungsgruppen
+			const std::string key = match[1];
+			const std::string value = match[2];
+
+			// Speichere in Container
+			metaMap[key] = value;
+			return true;
+		}
+
 		// Teste auf END
 		//------------------------------------------------------------------------------------------
 		else if (std::regex_match(input, match, pattern6))
@@ -833,8 +846,6 @@ namespace Klangraum
 				}
 				if (DEBUG)
 					printLine(80);
-				if (DEBUG)
-					cout << colorMap[COLOR_YELLOW] << "Bitte beachte: korrekte Schreibweise der Schluesselwoerter, keine mehrfachen \nDeklarationen von Variablen, keine Sonderzeichen, Dezimalzahlen mit '.', \nR darf kein Input sein, Buffern der Inputs wird empfohlen" << colorMap[COLOR_NULL] << endl;
 				return false;
 			}
 			else
@@ -977,6 +988,12 @@ namespace Klangraum
 		noise = g_x2 * g_fScale;
 		g_x2 += g_x1;
 		return noise;
+	}
+
+	// Gibt Map mit Metadaten zurück
+	std::unordered_map<std::string, std::string> FX8010::getMetaMap()
+	{
+		return metaMap;
 	}
 
 	// Main process loop

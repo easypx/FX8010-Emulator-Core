@@ -1,29 +1,36 @@
-; Metadaten (noch nicht implementiert)
+; Metadaten 
+name "testcode"
+copyright "2023, Klangraum, https://sites.google.com/site/kxmodular"
+created "2023/08/01"
+engine "fx8010_emulator"
+comment "fx8010 emulator development tests"
+guid "00000000-0000-0000-0000-000000000000"
 
 ; Deklarationen/Definitionen
 static a ; Kommentar
-itramsize 1000
+itramsize 1000 ; MAX_IDELAY_SIZE 8192
+xtramsize 48000 ; MAX_XDELAY_SIZE 1048576
 input in_l 0 ; NOTE: Hier gibt es einen Unterschied zu KX-DSP! 0 - Links, 1 - Rechts
 control volume = 0.5
 control pan = 0.5
 control filter_cutoff = 0.1
-output out_l = 0 
+output out_l 0 
 static rd
 static wr
-static noise
+static noise ; Pseudo Random Number Generator
 
-;Slidertest
+; Slidertest
 ;macs out_l, 0, in_l, volume
 
-;LOG (Vacuum Tube Transferfunktion)
+; LOG (Vacuum Tube Transferfunktion)
 ;log a, in_l, 3, 0
 ;macs out_l, 0, a, 1.0
 
-;EXP
+; EXP
 ;exp a, in_l, 7, 0
 ;macs out_l, 0, a, 1.0
 
-;Delayline mit Feedback
+; Delayline mit Feedback
 macs a, in_l, rd, 0.1
 idelay write, a, at, 0
 idelay read, rd, at, 17; max. read index (tramsize-1) !
@@ -32,20 +39,20 @@ macs out_l, in_l, rd, 0.5
 ; Lineare Interpolation
 ;interp out_l, -0.25, pan, 0.25
 
-;1-Pol Tiefpassfilter
+; 1-Pol Tiefpassfilter
 ;interp out_l, out_l, filter_cutoff, in_l
 
-;1-Pol Hochpassfilter
+; 1-Pol Hochpassfilter
 ;interp a, a, filter_cutoff, in_l 
 ;macsn out_l, in_l, a, 1 
 
-;Bedingter Sprung (siehe Sourcecode)
+; Bedingter Sprung (siehe Sourcecode)
 ;skip ccr, ccr, 384, 1 ; 384 = 0x180, testet Bereich 0 > x < 1.0
 
-;Logische Operationen (siehe Sourcecode)
+; Logische Operationen (siehe Sourcecode)
 ;andxor a, 1, 1, 0 ;
 
-;White Noise
+; White Noise
 macs out_l, 0, noise, 1.0
 
 end

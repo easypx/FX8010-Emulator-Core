@@ -18,6 +18,7 @@
 #include <regex>
 #include <map>
 #include <array>
+#include <unordered_map>
 
 using namespace std;
 
@@ -27,13 +28,13 @@ using namespace std;
 // 4305 - Value is converted to a smaller type in an initialization or as a constructor argument, resulting in a loss of information.
 #pragma warning(disable : 4244 4305 4715)
 
-// Nicht alle Defines werden genutzt
-#define E 2.71828               // schön zu haben
-#define PI 3.141592             // schön zu haben
+// Defines
+#define E 2.71828               // Eulersche Zahl
+#define PI 3.141592             // Kreiszahl Pi
 #define SAMPLERATE 48000        // originale Samplerate des DSP
 #define AUDIOBLOCKSIZE 128      // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
 #define DEBUG 1                 // Synaxcheck(Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
-#define PRINT_REGISTERS 0       // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger.
+#define PRINT_REGISTERS 0       // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger!
 #define MAX_IDELAY_SIZE 8192    // max. Gesamtgroesse iTRAM ~170.67 ms (AS10K Manual)
 #define MAX_XDELAY_SIZE 1048576 // max. Gesamtgroesse xTRAM ~21,84s (AS10K Manual)
 
@@ -64,6 +65,7 @@ namespace Klangraum
         int setRegisterValue(const std::string &key, float value);
         float getRegisterValue(const std::string &key);
         vector<string> getControlRegisters();
+        std::unordered_map<std::string, std::string> getMetaMap();
 
     private:
         // Enum for FX8010 opcodes
@@ -112,9 +114,9 @@ namespace Klangraum
             {"xdelay", XDELAY},
             {"end", END}};
 
-        // Directives are special instructions which tell the assembler to do certain things at assembly time.
-        // Diese Definitionen sind nicht ganz korrekt, siehe AS10K Manual, aber funktionieren.
         // Enum for FX8010 Directives
+        // Directives are special instructions which tell the assembler to do certain things at assembly time.
+        // Diese Definitionen sind nicht ganz korrekt/vollständig, aber funktionieren im KX-DSP Kontext. (siehe AS10K Manual)
         enum RegisterType
         {
             STATIC = 0,
@@ -129,7 +131,7 @@ namespace Klangraum
             WRITE,
             AT,
             CCR,
-            //NOISE
+            // NOISE
         };
 
         // This Map holds Key/Value pairs to assign registertypes(strings) to RegisterType(enum/int)
@@ -147,7 +149,7 @@ namespace Klangraum
             {"at", AT},
             {"ccr", CCR},
             //{"noise", NOISE}
-            };
+        };
 
         // FX8010 global storage
         double accumulator = 0; // 63 Bit, 4 Guard Bits, Long type?
@@ -280,13 +282,16 @@ namespace Klangraum
         float outputSamples[2] = {0};
 
         // Fast White Noise
-        // Range (-1.0 ... 1.0)
+        // Linear Feedback Shift Register (LFSR) als Pseudo-Zufallszahlengenerator
         // https://www.musicdsp.org/en/latest/Synthesis/216-fast-whitenoise-generator.html
         float g_fScale = 2.0f / 0xffffffff;
         // Seeds
         int g_x1 = 0x70f4f854;
         int g_x2 = 0xe1e9f0a7;
         float FX8010::whitenoise();
+
+        // Map mit Metadaten
+        std::unordered_map<std::string, std::string> metaMap;
     };
 
 } // namespace Klangraum

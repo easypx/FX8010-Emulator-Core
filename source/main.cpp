@@ -208,6 +208,8 @@ int main()
             }
         }
 
+        printLine(80);
+
         // if (!(DEBUG || PRINT_REGISTERS))
         {
             // Endzeitpunkt speichern
@@ -229,6 +231,15 @@ int main()
         string testRegister = "filter_cutoff";
         float value = fx8010->getRegisterValue(testRegister);
         cout << "Registerwert fuer '" << testRegister << "': " << value << endl;
+
+        printLine(80);
+
+        // Ausgabe der gespeicherten Schlüssel-Wert-Paare
+        cout << "Metadaten: " << endl;
+        for (const auto &pair : fx8010->getMetaMap())
+        {
+            std::cout << pair.first << ": " << pair.second << std::endl;
+        }
     }
     else
     {
