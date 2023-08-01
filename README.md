@@ -52,4 +52,6 @@ end
 
 ![EMU10K1](https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/EMU10K1-SEFbySpc.jpg/615px-EMU10K1-SEFbySpc.jpg)
 
-2023 / klangraum
+https://sites.google.com/site/kxmodular
+
+2023 / Klangraum
