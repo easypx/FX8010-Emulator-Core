@@ -9,7 +9,8 @@ using namespace Klangraum;
 
 int main()
 {
-    // Anzahl der Channels fuer Stereo
+    // Anzahl der Channels fuer DSP In-/Outputs
+    // später evtl. getrennt definierbar
     int numChannels = 1;
 
     // Pointer auf neue Instanz von FX8010
@@ -18,7 +19,7 @@ int main()
     // AC-Testsample SINOID
     //----------------------------------------------------------------
 
-    // Erzeugung des Vektors
+    // Vektor fuer Sinuswelle
     std::vector<float> sinoid;
 
     // Füllen des Vektors mit einer Sinuswelle von -1.0 bis 1.0 Amplitude
@@ -32,7 +33,7 @@ int main()
     // AC-Testsample BIPOLAR_RAMP zum Testen von LOG, EXP
     //----------------------------------------------------------------
 
-    // Vector mit Bipolar-Ramp erzeugen
+    // Vector fuer Bipolar-Ramp 
     std::vector<float> bipolarRamp;
 
     // linearen Sampledaten -1.0 bis 1.0
@@ -45,7 +46,7 @@ int main()
     // AC-Testsample UNIPOLAR_RAMP zum Testen von INTERP
     //----------------------------------------------------------------
 
-    // Vector mit Unipolar-Ramp erzeugen
+    // Vector fuer Unipolar-Ramp 
     std::vector<float> unipolarRamp;
 
     // linearen Sampledaten 0 bis 1.0
@@ -58,13 +59,14 @@ int main()
     // Dirac-Impuls zum Testen der Delayline
     //----------------------------------------------------------------
 
-    // Dirac Impuls zum Testen der Delayline
-    float diracImpulse[AUDIOBLOCKSIZE];
-    diracImpulse[0] = 1.0f; // 1. Element ist Dirac-Impuls
+    // Vektor fuer Dirac Impuls
+    std::vector<float> diracImpulse;
+
+    diracImpulse.push_back(1.0f); // 1. Element ist Dirac-Impuls
 
     for (int i = 1; i < AUDIOBLOCKSIZE; i++)
     {
-        diracImpulse[i] = 0.0f;
+        diracImpulse.push_back(0.0f);
     }
 
     // Lege I/O Buffer an

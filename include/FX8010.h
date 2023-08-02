@@ -35,7 +35,7 @@ using namespace std;
 #define E 2.71828182845         // Eulersche Zahl
 #define PI 3.14159265359        // Kreiszahl Pi
 #define SAMPLERATE 48000        // originale Samplerate des DSP
-#define AUDIOBLOCKSIZE 32       // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
+#define AUDIOBLOCKSIZE 32    // Nur zum Testen! Der Block-Loop wird vom VST-Plugin bereitgestellt.
 #define DEBUG 0                 // Synaxcheck (Verbose) & Errors, 0 oder 1 = mit/ohne Konsoleausgaben
 #define PRINT_REGISTERS 0       // Zeige Registerwerte an. Dauert bei großer AUDIOBLOCKSIZE länger!
 #define MAX_IDELAY_SIZE 8192    // max. Gesamtgroesse iTRAM ~170.67 ms (AS10K Manual)
@@ -47,6 +47,7 @@ namespace Klangraum
     class FX8010
     {
     public:
+        FX8010();
         FX8010(int numChannels);
         ~FX8010();
 
@@ -71,6 +72,7 @@ namespace Klangraum
         std::unordered_map<std::string, std::string> getMetaData();
         inline void setChannels(int numChannels_) { numChannels = numChannels_; }
         inline int getChannels() { return numChannels; }
+        bool getReadyStatus(){return isReady;}
 
     private:
         // Enum for FX8010 opcodes
@@ -295,6 +297,8 @@ namespace Klangraum
         // Konvertierung Float <-> 32Bit Integer
         float intToFloat(int32_t intValue);
         int32_t floatToInt(float floatValue);
+
+        bool isReady = false;
     };
 
 } // namespace Klangraum

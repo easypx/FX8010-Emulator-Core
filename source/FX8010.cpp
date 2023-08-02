@@ -1,8 +1,5 @@
 // Copyright 2023 Klangraum
 
-// IDEA: Map mit Registern statt Vector, Zugriff ueber RegisterName
-// IDEA: Sourcecode mit Stringstream direkt auswerten (ChatGPT's Idee, Source in /temp)
-
 #include "../include/FX8010.h"
 #include "../include/helpers.h"
 
@@ -170,7 +167,7 @@ namespace Klangraum
 	std::vector<double> FX8010::mirrorYVector(const std::vector<double> &inputVector)
 	{
 		std::vector<double> mirroredVector;
-		for (int i = inputVector.size() - 1; i >= 0; --i)
+		for (int i = static_cast<int>(inputVector.size()) - 1; i >= 0; --i)
 		{
 			mirroredVector.push_back(inputVector[i]);
 		}
@@ -844,7 +841,7 @@ namespace Klangraum
 				printLine(80);
 
 			// Wenn errorList > 1 (1. error ist ERROR_NONE)
-			int numErrors = errorList.size();
+			int numErrors = static_cast<int>(errorList.size());
 			if (numErrors > 1)
 			{
 				if (DEBUG)
@@ -865,6 +862,7 @@ namespace Klangraum
 					cout << colorMap[COLOR_GREEN] << "Keine Syntaxfehler gefunden." << colorMap[COLOR_NULL] << endl;
 				if (DEBUG)
 					printLine(80);
+					isReady = true;
 			}
 		}
 		else
