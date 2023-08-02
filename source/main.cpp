@@ -81,7 +81,7 @@ int main()
     double tolerance = 1e-4;
     // DC-Testvalue zum Testen des virtuellen Sliderinputs
     //----------------------------------------------------------------
-    //...
+    // Simply put a static value into inputBuffer[j] = 1.0
 
     // Sourcecode Laden und Parsen
     if (fx8010->loadFile("testcode.da"))
@@ -165,9 +165,9 @@ int main()
 
         std::cout << endl;
 
-        // Ausgabe der gespeicherten Schlüssel-Wert-Paare
+        // Ausgabe Metadaten
         cout << "Metadaten: " << endl;
-        for (const auto &pair : fx8010->getMetaMap())
+        for (const auto &pair : fx8010->getMetaData())
         {
             std::cout << pair.first << ": " << pair.second << std::endl;
         }

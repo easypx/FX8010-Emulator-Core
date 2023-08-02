@@ -1,4 +1,7 @@
 // Copyright 2023 Klangraum
+// Engine "fx8010_emulator_v0" (Floating Point version)
+// Build: 20230802
+// Useful documents:
 // https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/A%20Beginner's%20Guide%20to%20DSP%20Programming.pdf
 // https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/Other/AS10k1%20Manual%20(2000).pdf
 // https://github.com/kxproject/kX-Audio-driver-Documentation/blob/master/3rd%20Party%20Docs/FX8010%20-%20A%20DSP%20Chip%20Architecture%20for%20Audio%20Effects%20(1998).pdf
@@ -65,7 +68,9 @@ namespace Klangraum
         int setRegisterValue(const std::string &key, float value);
         float getRegisterValue(const std::string &key);
         vector<string> getControlRegisters();
-        std::unordered_map<std::string, std::string> getMetaMap();
+        std::unordered_map<std::string, std::string> getMetaData();
+        inline void setChannels(int numChannels_) { numChannels = numChannels_; }
+        inline int getChannels() { return numChannels; }
 
     private:
         // Enum for FX8010 opcodes
@@ -282,10 +287,14 @@ namespace Klangraum
         // Seeds
         int32_t g_x1 = 0x70f4f854;
         int32_t g_x2 = 0xe1e9f0a7;
-        float FX8010::whitenoise();
+        float whitenoise();
 
         // Map mit Metadaten
         std::unordered_map<std::string, std::string> metaMap;
+
+        // Konvertierung Float <-> 32Bit Integer
+        float intToFloat(int32_t intValue);
+        int32_t floatToInt(float floatValue);
     };
 
 } // namespace Klangraum

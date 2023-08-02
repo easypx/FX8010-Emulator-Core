@@ -36,9 +36,6 @@ namespace Klangraum
 
     void printLine(int count);
 
-    float intToFloat(int32_t intValue);
-    int32_t floatToInt(float floatValue);
-
 } // namespace Klangraum
 
 #endif // HELPERS_H

@@ -1002,10 +1002,24 @@ namespace Klangraum
 	}
 
 	// Gibt Map mit Metadaten zurück
-	std::unordered_map<std::string, std::string> FX8010::getMetaMap()
+	std::unordered_map<std::string, std::string> FX8010::getMetaData()
 	{
 		return metaMap;
 	}
+
+    // Funktion zum Umwandeln von 32-Bit-Integer in Float
+    float FX8010::intToFloat(int32_t intValue)
+    {
+        // 32-Bit-Integer in 32-Bit-Float umwandeln
+        return static_cast<float>(intValue) / static_cast<float>(INT32_MAX);
+    }
+
+    // Funktion zum Umwandeln von Float in 32-Bit-Integer
+    int32_t FX8010::floatToInt(float floatValue)
+    {
+        // Float in 32-Bit-Integer umwandeln
+        return static_cast<int32_t>(floatValue * static_cast<float>(INT32_MAX));
+    }
 
 	// Main process loop
 	std::vector<float> FX8010::process(const std::vector<float> &inputBuffer)
