@@ -9,7 +9,7 @@
 // Namespace Klangraum
 namespace Klangraum
 {
-	FX8010::FX8010(int32_t channels) : numChannels(channels)
+	FX8010::FX8010(int channels) : numChannels(channels)
 	{
 		initialize();
 	};
@@ -63,17 +63,17 @@ namespace Klangraum
 		// TODO(Klangraum): sign
 		cout << "Erzeuge LOG, EXP Lookuptables" << endl;
 
-		int32_t numExponent = 32;
-		int32_t numEntries = 32;
-		int32_t x_min = 0; // < 0 gives nan!
-		int32_t x_max = 1.0;
+		int numExponent = 32;
+		int numEntries = 32;
+		int x_min = 0; // < 0 gives nan!
+		int x_max = 1.0;
 
 		lookupTablesLog.reserve(numExponent - 1);
 		lookupTablesExp.reserve(numExponent - 1);
 
 		// Populate lookupTablesLog with lookup tables for different i values
 		// Tabellen mit (4 Vorzeichen (sign)) und 31 Exponenten je 32 Werte (2x für LOG und EXP)
-		for (int32_t i = 0; i < numExponent; i++)
+		for (int i = 0; i < numExponent; i++)
 		{
 			std::vector<double> lookupTableLog = createLogLookupTable(0, 1.0, numEntries, i);
 			std::vector<double> temp;
@@ -111,8 +111,8 @@ namespace Klangraum
 
 		// Delaylines
 		//--------------------------------------------------------------------------------
-		// Speicherallokation nicht ganz klar. Dauert resize() zu lange?
-		// Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor.
+		// Speicherallokation nicht ganz klar. Dauert resize() zu lange? (zufällig falsche Werte)
+		// Hier ist reserve() notwendig, sonst kommt es zum Zugriff auf einen leeren Vektor!
 		// resize() erfolgt zusätzlich in Syntaxcheck/Parser aufgrund der Sourcecode-Deklaration.
 		// if (DEBUG)
 		//	cout << "Reserviere Speicherplatz fuer Delaylines" << endl;
@@ -129,13 +129,13 @@ namespace Klangraum
 
 	// CHECKED
 	// Funktion zum Erstellen der Lookup-Tabelle für die n-te Wurzel
-	std::vector<double> FX8010::createLogLookupTable(double x_min, double x_max, int32_t numEntries, int32_t exponent)
+	std::vector<double> FX8010::createLogLookupTable(double x_min, double x_max, int numEntries, int exponent)
 	{
 		std::vector<double> lookupTable;
 		double step = (x_max - x_min) / (numEntries - 1);
 		// push 1. value=0 to avoid nan! only for log(x)! change i to 1!
 		// lookupTable.push_back(0.0f);
-		for (int32_t i = 0; i < numEntries; ++i)
+		for (int i = 0; i < numEntries; ++i)
 		{
 			double x = x_min + (i * step);
 			// natural log as seen in dane programming pdf, issues with nan!
@@ -150,12 +150,12 @@ namespace Klangraum
 
 	// CHECKED
 	// Funktion zum Erstellen der Lookup-Tabelle für n-te Potenz (EXP)
-	std::vector<double> FX8010::createExpLookupTable(double x_min, double x_max, int32_t numEntries, int32_t exponent)
+	std::vector<double> FX8010::createExpLookupTable(double x_min, double x_max, int numEntries, int exponent)
 	{
 		std::vector<double> lookupTable;
 		double step = (x_max - x_min) / (numEntries - 1);
 		// lookupTable.push_back(0.0f); // see log for explanation
-		for (int32_t i = 0; i < numEntries; ++i)
+		for (int i = 0; i < numEntries; ++i)
 		{
 			double x = x_min + i * step;
 			// double expValue = exp(x * numEntries - numEntries);
@@ -170,7 +170,7 @@ namespace Klangraum
 	std::vector<double> FX8010::mirrorYVector(const std::vector<double> &inputVector)
 	{
 		std::vector<double> mirroredVector;
-		for (int32_t i = inputVector.size() - 1; i >= 0; --i)
+		for (int i = inputVector.size() - 1; i >= 0; --i)
 		{
 			mirroredVector.push_back(inputVector[i]);
 		}
@@ -178,7 +178,7 @@ namespace Klangraum
 	}
 
 	// CHECKED
-	// Funktion zum Verknüpfen der Vectoren
+	// Funktion zum Verknüpfen der Vektoren
 	std::vector<double> FX8010::concatenateVectors(const std::vector<double> &vector1, const std::vector<double> &vector2)
 	{
 		std::vector<double> concatenatedVector;
@@ -209,7 +209,7 @@ namespace Klangraum
 	// NOT CHECKED
 	// Slighty modified cases against DANE Manual, which makes more sense. ChatGPT thinks the same way.
 	// Das CCR ist 5 Bit. Wir haben hier also ein Problem mit > 16. (siehe AS10K Manual)
-	// NOTE: Bitkombinationen sind auch möglich.
+	// NOTE: Verschiedene Bit-kombinationen sind auch möglich.
 	// Bit 5: Saturation, Bit 4: Zero, Bit 3: Negative, Bit 2: Normalized, Bit 1: Borrow
 	inline void FX8010::setCCR(const float result)
 	{
@@ -228,7 +228,7 @@ namespace Klangraum
 			registers[0].registerValue = 0b10100; // Negative Saturation
 
 		// Das Borrow Flag (oder Carry Flag) bei Wraparound wird in der Methode wrapAround() gesetzt.
-		// (eigentlich nur bei Integeraritmetik, hier hilfsweise mit floats)
+		// (eigentlich nur bei Festkomma-Arithmetik, hier hilfsweise mit floats)
 
 		else
 			registers[0].registerValue = 0b00000; // Wenn nichts zutrifft
@@ -236,7 +236,7 @@ namespace Klangraum
 
 	// CHECKED
 	// Beschreibe ein Register von VST aus z.B. Sliderinput
-	int32_t FX8010::setRegisterValue(const std::string &key, float value)
+	int FX8010::setRegisterValue(const std::string &key, float value)
 	{
 		bool found = false;
 		for (auto &element : registers)
@@ -268,7 +268,7 @@ namespace Klangraum
 		return 1; // Or any other default value you want to return if the element is not found
 	}
 
-	// NOT CHECKED
+	// CHECKED
 	inline int32_t FX8010::getCCR()
 	{
 		return registers[0].registerValue;
@@ -286,7 +286,7 @@ namespace Klangraum
 	inline double FX8010::linearInterpolate(double x, const std::vector<double> &lookupTable, double x_min, double x_max)
 	{
 		double step = (x_max - x_min) / (lookupTable.size() - 1);
-		int32_t index = static_cast<int32_t>((x - x_min) / step);
+		int index = static_cast<int>((x - x_min) / step);
 		double x1 = x_min + index * step;
 		double x2 = x_min + (index + 1) * step;
 		double y1 = lookupTable[index];
@@ -307,12 +307,12 @@ namespace Klangraum
 		if (a >= 1.0f)
 		{
 			result = a - 2.0f;
-			ccr_ = 0b00001 | ccr_; // Setze Borrow Flag bei Überlauf
+			ccr_ = 0b00001 | ccr_; // Setze Borrow Flag auf 1 bei Überlauf
 		}
 		else if (a < -1.0f)
 		{
 			result = a + 2.0f;
-			ccr_ = 0b00001 | ccr_; // Setze Borrow Flag bei Überlauf
+			ccr_ = 0b00001 | ccr_; // Setze Borrow Flag auf 1bei Überlauf
 		}
 		else
 		{
@@ -362,17 +362,6 @@ namespace Klangraum
 		return R;
 	}
 
-	// Setzen der Schreibposition in der Microcode Deklaration
-	inline void FX8010::setSmallDelayWritePos(int32_t smallDelayWritePos_)
-	{
-		smallDelayWritePos = smallDelayWritePos_;
-	}
-
-	inline void FX8010::setLargeDelayWritePos(int32_t largeDelayWritePos_)
-	{
-		largeDelayWritePos = largeDelayWritePos_;
-	}
-
 	// NOT CHECKED
 	// Syntaxchecker/Parser/Mapper
 	// NOTE: Implementation ist "Just Good Enough". Eine genauere Auswertung und mehr Fehlermeldungen sind wünschenswert.
@@ -382,22 +371,21 @@ namespace Klangraum
 		// std::regex pattern1(R"(^\s*(static|temp)\s+((?:\w+\s*(?:=\s*\d+(?:\.\d*)?)?\s*,?\s*)+)\s*$)");
 
 		// Deklarationen: z.B. static a || static b = 1.0
-		// std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:\s*=\s*(\d+(?:\.\d+)?))?\s*$)");
 		std::regex pattern1(R"(^\s*(static|temp|control|input|output|const)\s+(\w+)(?:[\s=,]*\s*(\d+(?:\.\d+)?))?\s*$)");
 
 		// Leerzeile
 		std::regex pattern2(R"(^\s*$)");
 
-		// tramsize im Deklarationsteil
+		// TRAMsize im Deklarationsteil
 		std::regex pattern3(R"(^\s*(itramsize|xtramsize)\s+(\d+)*\s$)");
 
-		// check instructions TODO: all instructions
+		// Check Instructions
 		std::regex pattern4(R"(^\s*(macs|macsn|macints|macintw|acc3|macmv|macw|macwn|skip|andxor|tstneg|limit|limitn|log|exp|interp|idelay|xdelay)\s+([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*,\s*([a-zA-Z0-9_.-]+|\d+\.\d+)\s*$)");
 
-		// check metadata TODO: ...
+		// Check Metadata
 		std::regex pattern5(R"(\s*(name|copyright|created|engine|comment|guid)\s+\"([^\"]+)\")");
 
-		// Check "END"
+		// Check "end"
 		std::regex pattern6(R"(^\s*(end)\s*$)");
 
 		// Check Kommentar ";"
@@ -452,7 +440,7 @@ namespace Klangraum
 					// NOTE: Hier gibt es einen Unterschied zu KX-Driver! Dieser hat keine Definition fuer
 					// IOIndex. Die In-und Outputs werden dort inkrementell erzeugt und können beliebig verknüpft werden.
 					// In diesem Emulator wird nur Stereo Processing gemacht, d.h. wir müssen bei der Definition
-					// IOindizes angeben. Wir könnten theoretisch auch Multichannelprocessing machen und unsere I/O
+					// IOindizes angeben. Wir könnten theoretisch auch Multichannel-Processing machen und unsere I/O
 					// Indizes frei wählen.
 					// TODO(Klangraum): Evtl. spaeter andere Syntax z.B input in, 0/1 oder einfach input in_l/in_r?
 					if (registerTyp == "input" || registerTyp == "output")
@@ -493,7 +481,7 @@ namespace Klangraum
 				error.errorRow = errorCounter;
 				errorList.push_back(error);
 				if (DEBUG)
-					cout << "Multiple Variabledenklaration" << endl;
+					cout << "Multiple Variablendeklaration" << endl;
 				return false;
 			}
 			return true;
@@ -581,7 +569,7 @@ namespace Klangraum
 
 			// Instructionname
 			//------------------------------------------------------------------------------------------
-			int32_t instructionName = opcodeMap[keyword];
+			int instructionName = opcodeMap[keyword];
 			instruction.opcode = instructionName;
 
 			// GPR R
@@ -738,7 +726,7 @@ namespace Klangraum
 		//------------------------------------------------------------------------------------------
 		else if (std::regex_match(input, match, pattern7))
 		{
-			// Kommt erstmal nicht zum Einsatz. Code wird in loadFile() von Kommentaren bereinigt.
+			// Kommt erst einmal nicht zum Einsatz. Code wird in loadFile() von Kommentaren bereinigt.
 			if (DEBUG)
 				cout << "Kommentar gefunden" << endl;
 		}
@@ -757,9 +745,9 @@ namespace Klangraum
 
 	// CHECKED
 	// Gibt gemappten Registerindex zurück
-	int32_t FX8010::mapRegisterToIndex(const string &registerName)
+	int FX8010::mapRegisterToIndex(const string &registerName)
 	{
-		int32_t index = findRegisterIndexByName(registers, registerName);
+		int index = findRegisterIndexByName(registers, registerName);
 		// Wenn GPR nicht existiert wurde und ein Zahl ist
 		// (Zahlen können auch ohne Deklaration in den Instructions verwendet werden)
 		if (index == -1 && isNumber(registerName))
@@ -804,7 +792,7 @@ namespace Klangraum
 				printLine(80);
 			while (getline(file, line)) // Zeile für Zeile einlesen
 			{
-				// Entferne den Kommentaranteil
+				// Entferne den Kommentartext
 				std::string cleanedCode;
 				size_t commentPos = line.find(';');
 				if (commentPos != std::string::npos)
@@ -856,13 +844,13 @@ namespace Klangraum
 				printLine(80);
 
 			// Wenn errorList > 1 (1. error ist ERROR_NONE)
-			int32_t numErrors = errorList.size();
+			int numErrors = errorList.size();
 			if (numErrors > 1)
 			{
 				if (DEBUG)
 					cout << colorMap[COLOR_RED] << "Syntaxfehler gefunden" << colorMap[COLOR_NULL] << endl; // Ausgabe Syntaxfehler mit Zeilennummer, beginnend mit 0
 
-				for (int32_t i = 1; i < numErrors; i++)
+				for (int i = 1; i < numErrors; i++)
 				{
 					if (DEBUG)
 						cout << errorList[i].errorDescription << " (" << errorList[i].errorRow << ")" << endl;
@@ -891,9 +879,9 @@ namespace Klangraum
 	// CHECKED
 	// Um zu prüfen, ob ein GPR mit registerName="a" bereits im Vector registers vorhanden ist
 	// Wenn nicht gefunden gib -1 zurück, wenn ja gib den Index zurück.
-	int32_t FX8010::findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name)
+	int FX8010::findRegisterIndexByName(const std::vector<GPR> &registers, const std::string &name)
 	{
-		for (int32_t i = 0; i < registers.size(); ++i)
+		for (int i = 0; i < registers.size(); ++i)
 		{
 			if (registers[i].registerName == name)
 			{
@@ -912,7 +900,7 @@ namespace Klangraum
 
 	// Gib minVal oder maxVal zurück, wenn Grenzen überschritten werden, ansonsten value
 	// wie saturate()
-	int32_t clamp(int32_t value, int32_t minVal, int32_t maxVal)
+	int clamp(int value, int minVal, int maxVal)
 	{
 		return std::max(minVal, std::min(value, maxVal));
 	}
@@ -920,23 +908,23 @@ namespace Klangraum
 	// CHECKED
 	// Implement a method to write a sample into each delay line. When writing a sample,
 	// you need to update the write position and wrap it around if it exceeds the buffer size.
-	inline void FX8010::writeSmallDelay(float sample, int32_t position_)
+	inline void FX8010::writeSmallDelay(float sample, int position_)
 	{
 		// Range-Check
 		position_ = std::max(0, std::min(position_, iTRAMSize - 1));
 		// Schreibe Sample in Delayline
 		smallDelayBuffer[smallDelayWritePos + position_] = sample;
-		// Inkrementiere Schreibpointer (Ringbuffer)
+		// Inkrementiere Schreibpointer (Ringpuffer)
 		smallDelayWritePos = (smallDelayWritePos + 1) % iTRAMSize;
 	}
 
-	inline void FX8010::writeLargeDelay(float sample, int32_t position_)
+	inline void FX8010::writeLargeDelay(float sample, int position_)
 	{
 		// Range-Check
 		position_ = std::max(0, std::min(position_, xTRAMSize - 1));
 		// Schreibe Sample in Delayline
 		largeDelayBuffer[largeDelayWritePos + position_] = sample;
-		// Inkrementiere Schreibpointer (Ringbuffer)
+		// Inkrementiere Schreibpointer (Ringpuffer)
 		largeDelayWritePos = (largeDelayWritePos + 1) % xTRAMSize;
 	}
 
@@ -945,9 +933,9 @@ namespace Klangraum
 	// To do linear Interpolation, you need to find the fractional part of the read position
 	// and interpolate between the two adjacent samples.
 
-	inline float FX8010::readSmallDelay(int32_t position_)
+	inline float FX8010::readSmallDelay(int position_)
 	{
-		// Erläuterung zum Ringbuffer:
+		// Erläuterung zum Ringpuffer:
 		// Lesepointer läuft Schreibpointer hinterher!
 		// Grundzustand: Lesepointer zeigt auf letztes Element in der Delayline (Index: iTRAMSize - 1),
 		// Schreibpointer zeigt auf 1. Element. (Index: 0)
@@ -964,26 +952,26 @@ namespace Klangraum
 		// Mit (smallDelayReadPos - position_) stellen wir den Lesepointer zurück.
 		// NOTE: Modulo Operator sorgt für einen Wraparound.
 		float out = smallDelayBuffer[(smallDelayReadPos - position_) % iTRAMSize];
-		// Inkrementiere Lesepointer (Ringbuffer mit Wraparound)
+		// Inkrementiere Lesepointer (Ringpuffer mit Wraparound)
 		smallDelayReadPos = (smallDelayReadPos + 1) % iTRAMSize;
 		return out;
 	}
 
-	inline float FX8010::readLargeDelay(int32_t position_)
+	inline float FX8010::readLargeDelay(int position_)
 	{
 		// Range-Check
 		position_ = std::max(0, std::min(position_, xTRAMSize - 1));
 		// Lese Sample aus Delayline
 		float out = largeDelayBuffer[(largeDelayReadPos - position_) % xTRAMSize];
-		// Inkrementiere Lesepointer (Ringbuffer)
+		// Inkrementiere Lesepointer (Ringpuffer)
 		largeDelayReadPos = (largeDelayReadPos + 1) % xTRAMSize;
 		return out;
 	}
 
 	// Registerwerte ausgeben
-	void FX8010::printRegisters(const int32_t instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator)
+	void FX8010::printRegisters(const int instruction, const float value1, const float value2, const float value3, const float value4, const double accumulator)
 	{
-		int32_t columnWidth = 12; // Spaltenbreite
+		int columnWidth = 12; // Spaltenbreite
 
 		// Vergleich mit Null mit einer kleinen Toleranz
 		double tolerance = 1e-6;
@@ -997,7 +985,7 @@ namespace Klangraum
 		std::cout << "ACCU" << std::setw(columnWidth) << ((std::abs(accumulator) < tolerance) ? 0.0 : accumulator) << std::endl;
 	}
 
-	int32_t FX8010::getInstructionCounter()
+	int FX8010::getInstructionCounter()
 	{
 		return instructionCounter;
 	}
@@ -1023,11 +1011,11 @@ namespace Klangraum
 	std::vector<float> FX8010::process(const std::vector<float> &inputBuffer)
 
 	{
-		// Endflag fuer einen Samplezyklus. Wird mit END im Sourcecode gesetzt.
+		// End-Flag fuer einen Samplezyklus. Wird mit END im Sourcecode gesetzt.
 		bool isEND = false;
 
 		// Skip n Instructions
-		int32_t numSkip = 0;
+		int numSkip = 0;
 
 		// Durchlaufen der Instruktionen und Ausfuehren des Emulators
 		do
@@ -1037,11 +1025,11 @@ namespace Klangraum
 				if (numSkip == 0)
 				{
 					// Zugriff auf die Operanden und Registerinformationen
-					const int32_t opcode = instruction.opcode; // read only
-					int32_t operand1Index = instruction.operand1;
-					int32_t operand2Index = instruction.operand2;
-					int32_t operand3Index = instruction.operand3;
-					int32_t operand4Index = instruction.operand4;
+					const int opcode = instruction.opcode; // read only
+					int operand1Index = instruction.operand1;
+					int operand2Index = instruction.operand2;
+					int operand3Index = instruction.operand3;
+					int operand4Index = instruction.operand4;
 
 					// Zugriff auf die GPR und deren Daten
 					GPR &R = registers[operand1Index]; // read/write
@@ -1175,7 +1163,7 @@ namespace Klangraum
 					case SKIP:
 						// Wenn X = CCR, dann überspringe Y Instructions.
 						if (static_cast<int32_t>(X.registerValue) == registers[0].registerValue)
-							numSkip = static_cast<int32_t>(Y.registerValue);
+							numSkip = static_cast<int>(Y.registerValue);
 						break;
 					case INTERP:
 						R.registerValue = (1.0 - X.registerValue) * A.registerValue + (X.registerValue * Y.registerValue);
@@ -1189,24 +1177,24 @@ namespace Klangraum
 						// READ, A, AT, Y
 						if (R.registerType == READ)
 						{
-							A.registerValue = readSmallDelay(static_cast<int32_t>(Y.registerValue)); // Y = Adresse, (Y-2048) mit 11 Bit Shift
+							A.registerValue = readSmallDelay(static_cast<int>(Y.registerValue)); // Y = Adresse, (Y-2048) mit 11 Bit Shift
 						}
 						// WRITE, A, AT, Y
 						else if (R.registerType == WRITE)
 						{
-							writeSmallDelay(A.registerValue, static_cast<int32_t>(Y.registerValue)); // A = value
+							writeSmallDelay(A.registerValue, static_cast<int>(Y.registerValue)); // A = value
 						}
 						break;
 					case XDELAY:
 						// READ, A, AT, Y
 						if (R.registerType == READ)
 						{
-							A.registerValue = readLargeDelay(static_cast<int32_t>(Y.registerValue));
+							A.registerValue = readLargeDelay(static_cast<int>(Y.registerValue));
 						}
 						// WRITE, A, AT, Y
 						else if (R.registerType == WRITE)
 						{
-							writeLargeDelay(A.registerValue, static_cast<int32_t>(Y.registerValue));
+							writeLargeDelay(A.registerValue, static_cast<int>(Y.registerValue));
 						}
 						break;
 					case END:

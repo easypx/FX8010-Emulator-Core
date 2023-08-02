@@ -7,12 +7,12 @@ using namespace Klangraum;
 
 #define SLIDER_TEST 1
 
-int32_t main()
+int main()
 {
     // Anzahl der Channels fuer Stereo
-    int32_t numChannels = 1;
+    int numChannels = 1;
 
-    // Pointe auf neue Instanz von FX8010
+    // Pointer auf neue Instanz von FX8010
     Klangraum::FX8010 *fx8010 = new Klangraum::FX8010(numChannels);
 
     // AC-Testsample SINOID
@@ -22,7 +22,7 @@ int32_t main()
     std::vector<float> sinoid;
 
     // Füllen des Vektors mit einer Sinuswelle von -1.0 bis 1.0 Amplitude
-    for (int32_t i = 0; i < AUDIOBLOCKSIZE; i++)
+    for (int i = 0; i < AUDIOBLOCKSIZE; i++)
     {
         float phase = static_cast<float>(i) / (AUDIOBLOCKSIZE - 1) * 2 * PI; // Phasenwert von 0 bis 2*pi
         float value = std::sin(phase);                                       // Wertebereich von -1.0 bis 1.0
@@ -36,7 +36,7 @@ int32_t main()
     std::vector<float> bipolarRamp;
 
     // linearen Sampledaten -1.0 bis 1.0
-    for (int32_t i = -(AUDIOBLOCKSIZE) / 2.0; i < (AUDIOBLOCKSIZE / 2.0); i++)
+    for (int i = -(AUDIOBLOCKSIZE) / 2.0; i < (AUDIOBLOCKSIZE / 2.0); i++)
     {
         float value = static_cast<float>(i) / (AUDIOBLOCKSIZE / 2.0); // Wertebereich von 0 bis 1.0
         bipolarRamp.push_back(value);
@@ -49,7 +49,7 @@ int32_t main()
     std::vector<float> unipolarRamp;
 
     // linearen Sampledaten 0 bis 1.0
-    for (int32_t i = 0; i < AUDIOBLOCKSIZE; i++)
+    for (int i = 0; i < AUDIOBLOCKSIZE; i++)
     {
         float value = static_cast<float>(i) / AUDIOBLOCKSIZE; // Wertebereich von 0 bis 1.0
         unipolarRamp.push_back(value);
@@ -62,7 +62,7 @@ int32_t main()
     float diracImpulse[AUDIOBLOCKSIZE];
     diracImpulse[0] = 1.0f; // 1. Element ist Dirac-Impuls
 
-    for (int32_t i = 1; i < AUDIOBLOCKSIZE; i++)
+    for (int i = 1; i < AUDIOBLOCKSIZE; i++)
     {
         diracImpulse[i] = 0.0f;
     }
@@ -83,7 +83,7 @@ int32_t main()
     //----------------------------------------------------------------
     //...
 
-    // Sourcecode laden und parsen
+    // Sourcecode Laden und Parsen
     if (fx8010->loadFile("testcode.da"))
     {
         // Vorbereitung der CSV Ausgabe
@@ -98,7 +98,7 @@ int32_t main()
 
         // Call the process() method to execute the instructions
         // Here we do Stereo processing.
-        for (int32_t i = 0; i < AUDIOBLOCKSIZE; i++)
+        for (int i = 0; i < AUDIOBLOCKSIZE; i++)
         {
             // Simuliere Sliderinput alle 8 Samples
             //----------------------------------------------------------------
@@ -111,12 +111,12 @@ int32_t main()
                 }
             }
 
-            for (int32_t j = 0; j < numChannels; j++)
+            for (int j = 0; j < numChannels; j++)
             {
                 inputBuffer[j] = bipolarRamp[i];
             }
 
-            // Hier erfolgt die Berechung
+            // Hier erfolgt die Berechnung
             outputBuffer = fx8010->process(inputBuffer);
 
             // DSP Output anzeigen
